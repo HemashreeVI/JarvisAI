@@ -35,8 +35,17 @@ def ensure_electron() -> Path:
         raise RuntimeError("Node.js isn't installed. Get the LTS version from https://nodejs.org, "
                            "then run Nova again for a background-free window.")
     print("[nova] setting up my transparent window (one time, about a minute)...")
-    subprocess.run([npm, "install", "--no-audit", "--no-fund"], cwd=SHELL, check=True, shell=IS_WINDOWS)
+    if not (SHELL / "node_modules" / "electron").exists():
+        subprocess.run([npm, "install", "--no-audit", "--no-fund"], cwd=SHELL, check=True, shell=IS_WINDOWS)
     exe = electron_exe()
+    if not exe:
+        # Newer npm versions skip packages' install scripts, so Electron never downloads
+        # its app. Run that download step ourselves.
+        node = shutil.which("node")
+        if node:
+            print("[nova] downloading the window app (about 100 MB)...")
+            subprocess.run([node, str(SHELL / "node_modules" / "electron" / "install.js")], cwd=SHELL, check=False)
+        exe = electron_exe()
     if not exe:
         raise RuntimeError("Electron didn't install correctly. Try: cd nova\\shell && npm install")
     return exe
