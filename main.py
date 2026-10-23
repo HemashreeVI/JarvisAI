@@ -16,8 +16,17 @@ os.environ.setdefault("HF_HUB_DISABLE_IMPLICIT_TOKEN", "1")
 os.environ.setdefault("HF_HUB_VERBOSITY", "error")
 warnings.filterwarnings("ignore", module="huggingface_hub")
 
-from nova.app import NovaApp  # noqa: E402
-from nova.config import load_settings  # noqa: E402
+import sys  # noqa: E402
+
+try:
+    from nova.app import NovaApp  # noqa: E402
+    from nova.config import load_settings  # noqa: E402
+except ModuleNotFoundError as e:
+    print(f"\nNova is missing a package: {e.name}")
+    print(f"This Python is: {sys.executable}")
+    print("Install everything Nova needs into it with:\n")
+    print("    python -m pip install -r requirements.txt\n")
+    sys.exit(1)
 
 
 def main():
