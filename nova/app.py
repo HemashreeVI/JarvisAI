@@ -37,6 +37,8 @@ class NovaApp:
         self._busy_until = 0.0
         self._brain_ok = True
         self._last_cheer = 0.0
+        self._thinking = False
+        self._fast = False  # set once the brain proves quick; slow laptops get instant ready-made lines
 
         if settings["voice"]["enabled"]:
             self._init_voice()
@@ -88,7 +90,8 @@ class NovaApp:
         try:
             from nova.listener import Listener
             self.listener = Listener(self.settings)
-            self.listener.wake_word_allowed = lambda: not self.quiet()
+            # don't run speech recognition for "Hey Nova" while the brain needs the processor
+            self.listener.wake_word_allowed = lambda: not self.quiet() and not self._thinking
             if self.settings["emotion"]["use_voice_tone"]:
                 from nova.voice_tone import VoiceToneAnalyzer
                 self.tone = VoiceToneAnalyzer(DATA_DIR)
@@ -111,7 +114,8 @@ class NovaApp:
         return time.time() < self._busy_until or not self._jobs.empty()
 
     def brain_ready(self) -> bool:
-        return self._brain_ok
+        """OK to ask the brain for spontaneous lines (welcomes, check-ins) without making you wait?"""
+        return self._brain_ok and self._fast and not self._thinking
 
     def set_quiet(self, minutes: int):
         self._quiet_until = time.time() + minutes * 60 if minutes > 0 else 0.0
@@ -183,15 +187,38 @@ class NovaApp:
             tone = self.tone.analyze(audio, SAMPLE_RATE, text)
 
         said = []
+        self._thinking = True
+
+        def still_thinking(msg):
+            if not said and self.body:
+                self.body.say(msg, "thinking", 30)
+
+        timers = [threading.Timer(2.5, still_thinking, ["Hmm, let me think..."]),
+                  threading.Timer(25, still_thinking, ["Still thinking... my brain is a bit slow on this laptop!"])]
+        for t in timers:
+            t.start()
 
         def on_sentence(sentence, emotion):
             # speak each sentence as soon as it's ready; the bubble shows it the moment she says it
             if not said:
-                print(f"[nova] first words after {time.time() - started:.1f}s", flush=True)
+                for t in timers:
+                    t.cancel()
+                first = time.time() - started
+                self._fast = first < 6
+                print(f"[nova] first words after {first:.1f}s", flush=True)
             said.append(sentence)
             self.express(" ".join(said), emotion, speak=sentence)
 
-        reply = self.brain.respond(text, tone=tone, on_sentence=on_sentence)
+        try:
+            reply = self.brain.respond(text, tone=tone, on_sentence=on_sentence)
+        finally:
+            self._thinking = False
+            for t in timers:
+                t.cancel()
+        took = time.time() - started
+        if took > 15 and self.settings["brain"]["model"] != "qwen2.5:3b":
+            print(f"[nova] tip: that took {took:.0f}s. For faster replies run  ollama pull qwen2.5:3b  "
+                  'and set model = "qwen2.5:3b" in settings.toml')
         self._brain_ok = reply.ok
         mood = reply.user_mood
         print(f"Nova [{reply.nova_emotion}] ({mood.describe()} detected, {time.time() - started:.1f}s): {reply.text}"
@@ -254,7 +281,7 @@ class NovaApp:
 
     def _ears_state(self, state: str):
         if state == "missed":
-            print("[ears] didn't catch anything")
+            print(f"[ears] didn't catch anything{self.listener.diagnosis() if self.listener else ''}")
             self.express("Hmm, I didn't catch that. Try again, or double-click me to type!", "concerned")
         elif state.startswith("heard:"):
             print(f"[ears] heard: {state[6:]}")
@@ -314,7 +341,8 @@ class NovaApp:
             ("Brain", self.check_brain()),
             ("Body", f"{body} - look at the {self.settings['buddy']['corner']} of your screen" if self.body else body),
             ("Voice", f"{self.speaker.voice_name()} (click Nova > Change my voice)" if self.speaker else "off"),
-            ("Ears", ("listening for 'Hey Nova'" if self.settings["voice"]["wake_word"] else "click/hotkey only")
+            ("Ears", (("listening for 'Hey Nova'" if self.settings["voice"]["wake_word"] else "click/hotkey only")
+                      + f" (mic: {self.listener.mic_name()})")
              if self.listener else "off (no microphone) - double-click Nova to type"),
             ("Pet", self.pet),
         ]

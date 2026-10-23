@@ -11,6 +11,7 @@ Any file you drop into nova/skills/ is loaded automatically.
 import importlib
 import inspect
 import pkgutil
+import re
 import traceback
 from dataclasses import dataclass
 from types import SimpleNamespace
@@ -111,5 +112,49 @@ def load_skills():
     return REGISTRY
 
 
-def schemas() -> list[dict]:
-    return [t.schema() for t in REGISTRY.values()]
+def schemas(names=None) -> list[dict]:
+    return [t.schema() for n, t in REGISTRY.items() if names is None or n in names]
+
+
+# Words that suggest a message needs a tool. Sending only the tools a message might need keeps
+# the prompt small, which makes replies MUCH faster on laptops without a graphics card.
+ROUTES = {
+    "get_datetime": ["time", "date", "day is it", "today", "clock", "what day"],
+    "system_status": ["battery", "cpu", "ram", "memory", "storage", "disk", "charge", "charging"],
+    "media_control": ["volume", "mute", "louder", "quieter", "pause", "resume", "next song", "previous song", "skip"],
+    "take_screenshot": ["screenshot", "screen shot", "capture"],
+    "power": ["shutdown", "shut down", "restart", "reboot", "lock", "sleep", "turn off the", "cancel shutdown"],
+    "open_app": ["open", "launch", "start "],
+    "close_app": ["close", "kill", "exit"],
+    "open_website": ["website", ".com", ".in", ".org", "open", "go to"],
+    "google_search": ["search", "google", "look up", "find out"],
+    "play_youtube": ["play", "youtube", "song", "music", "video"],
+    "get_weather": ["weather", "rain", "temperature", "hot", "cold", "forecast", "sunny", "umbrella"],
+    "get_news": ["news", "headline", "happening"],
+    "wikipedia": ["who is", "what is", "who was", "what are", "tell me about", "wiki", "explain"],
+    "set_reminder": ["remind", "reminder", "alarm", "wake me", "timer"],
+    "list_reminders": ["reminder", "alarm"],
+    "cancel_reminder": ["cancel", "reminder", "alarm"],
+    "remember": ["remember", "my name", "my birthday", "i like", "i love", "favourite", "favorite", "note that"],
+    "forget": ["forget"],
+    "add_note": ["note", "write down", "jot"],
+    "read_notes": ["notes"],
+    "find_file": ["file", "folder", "document", "pdf", "find my"],
+    "send_whatsapp": ["whatsapp", "message", "text "],
+    "check_email": ["email", "mail", "inbox", "gmail"],
+    "send_email": ["email", "mail"],
+    "perform": ["dance", "spin", "crawl", "walk", "jump", "wave", "hug", "cheer", "move"],
+    "quiet_mode": ["quiet", "shut up", "silent", "stop talking", "disturb", "focus", "turn off"],
+    "activity_today": ["what did i do", "screen time", "how long", "activity", "my day"],
+}
+YES = re.compile(r"^\s*(yes|yeah|yep|ok|okay|sure|do it|go ahead|confirm|please do|haan|ha)\b", re.I)
+
+
+def route(text: str, previous: list | None = None) -> list[str]:
+    """Names of the tools this message might need (often none)."""
+    lowered = f" {text.lower()} "
+    names = [name for name, words in ROUTES.items() if name in REGISTRY and any(w in lowered for w in words)]
+    if previous and YES.match(text):  # "yes" after Nova asked to confirm something
+        names += [n for n in previous if n not in names]
+    names += [n for n in REGISTRY if n not in ROUTES and n.split("_")[0] in lowered]  # skills you add yourself
+    return names

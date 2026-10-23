@@ -61,11 +61,12 @@ class Brain:
         self.memory = memory
         if client is None:
             from ollama import Client
-            client = Client(host=self.cfg["host"])
+            client = Client(host=self.cfg["host"], timeout=180)  # never wait forever
         self.client = client
         use_llm_mood = settings.get("emotion", {}).get("llm_mood", False)
         self.emotions = EmotionEngine(classify_fn=self._classify if use_llm_mood else None)
         self.context_fn = lambda: ""  # extra live context, e.g. what app they're using
+        self.last_tools: list[str] = []  # tools offered last time, for "yes" confirmations
         self.options = {"temperature": self.cfg["temperature"], "num_ctx": int(self.cfg.get("context", 4096))}
 
     def _classify(self, text: str, context: str) -> dict | None:
@@ -95,7 +96,7 @@ class Brain:
     def warm_up(self):
         """Load the model into memory now, so the first real reply isn't slow."""
         try:
-            self.client.chat(model=self.cfg["model"], keep_alive="30m", tools=tools.schemas(),
+            self.client.chat(model=self.cfg["model"], keep_alive="30m",
                              messages=[{"role": "system", "content": self._system_prompt()},
                                        {"role": "user", "content": "hi"}],
                              options={**self.options, "num_predict": 1})
@@ -119,10 +120,13 @@ class Brain:
                     {"role": "user", "content": f"{self._context_note(mood)}\n{user_text}"}]
         used, raw = [], ""
         speech = _SentenceStream(mood.nova_emotion, on_sentence)
+        offered = tools.route(user_text, self.last_tools)
+        self.last_tools = offered
+        schemas = tools.schemas(offered) or None
         try:
             for _ in range(MAX_TOOL_ROUNDS):
                 content, calls = "", []
-                for chunk in self.client.chat(model=self.cfg["model"], messages=messages, tools=tools.schemas(),
+                for chunk in self.client.chat(model=self.cfg["model"], messages=messages, tools=schemas,
                                               options=self.options, keep_alive="30m", stream=True):
                     msg = chunk["message"]
                     if msg.get("tool_calls"):
@@ -185,6 +189,9 @@ class Brain:
         err = str(error).lower()
         if "not found" in err and "model" in err:
             return f"I don't have my brain model yet. Please run: ollama pull {self.cfg['model']}"
+        if "timed out" in err or "timeout" in err:
+            return ("Sorry, I took too long to think. Try a faster brain: run  ollama pull qwen2.5:3b  "
+                    "and set model = \"qwen2.5:3b\" in settings.toml.")
         if any(w in err for w in ("connect", "refused", "failed to establish")):
             return "I can't reach my brain. Please start Ollama, then talk to me again."
         return f"Oops, something went wrong in my head: {error}"
