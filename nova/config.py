@@ -21,7 +21,7 @@ DEFAULTS = {
         "wake_word": True,
         "wake_words": ["nova", "hey nova"],
         "engine": "neural",
-        "neural_voice": "en-US-AnaNeural",
+        "neural_voice": "en-US-AvaNeural",
         "voice_pitch": 0,
         "voice_speed": 0,
         "tts_rate": 180,
@@ -32,7 +32,7 @@ DEFAULTS = {
     "pet": {"name": "Pip"},
     "emotion": {"use_voice_tone": True},
     "companion": {},
-    "buddy": {"style": "3d", "size": 190, "corner": "bottom-right"},
+    "buddy": {"style": "3d", "size": 120, "corner": "bottom-right"},
 }
 
 

@@ -22,9 +22,9 @@ stt_model = "base.en"       # faster-whisper model: tiny.en, base.en, small.en
 wake_word = true            # always listen for "Hey Nova"
 wake_words = ["nova", "hey nova", "hi nova", "okay nova"]
 engine = "neural"           # "neural" = natural cute voice (free, needs internet), "system" = offline PC voice
-neural_voice = "en-US-AnaNeural"   # cute & childlike. Others: en-US-JennyNeural, en-GB-MaisieNeural (young),
-                                   # en-IN-NeerjaNeural (Indian English), en-US-AriaNeural. List: edge-tts --list-voices
-voice_pitch = 0             # extra pitch in Hz (+20 = squeakier, -20 = deeper)
+neural_voice = "en-US-AvaNeural"   # natural & warm. Others: en-US-EmmaNeural, en-IN-NeerjaExpressiveNeural,
+                                   # en-US-JennyNeural, en-GB-SoniaNeural. Or click Nova > "Change my voice"
+voice_pitch = 0             # extra pitch in Hz (keep near 0 - shifting makes voices sound robotic)
 voice_speed = 0             # extra speed in % (+10 = faster)
 tts_rate = 180              # system voice: words per minute (Nova adjusts this with her mood)
 tts_voice = "Zira"          # system voice: part of a voice name installed on your PC ("" = default)
@@ -48,5 +48,5 @@ late_night_hour = 23        # after this hour, gently tell you to sleep
 
 [buddy]
 style = "3d"                # "3d" (real 3D robot) or "2d" (lightweight)
-size = 190                  # robot size (the 3D window is about 2x this)
+size = 120                  # robot size: 90 = tiny, 120 = small, 160 = medium
 corner = "bottom-right"     # where Nova sits at startup

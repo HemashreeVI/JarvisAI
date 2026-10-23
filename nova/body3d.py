@@ -1,8 +1,13 @@
-"""Nova's 3D body: a transparent, frameless, always-on-top window rendering nova/body/ (three.js).
+"""Nova's 3D body: a frameless, always-on-top window rendering nova/body/ (three.js).
+
+On Windows the window is *shaped*: the page sends Nova's silhouette (a list of rectangles)
+several times a second and we clip the window to it with SetWindowRgn. Everything outside
+her outline is truly gone - no background, and clicks go straight through to your apps.
 
 Same interface as the 2D Buddy, so the app doesn't care which body is in use.
 Python -> JS goes through evaluate_js; JS -> Python through the small _Bridge API.
 """
+import ctypes
 import json
 import platform
 import threading
@@ -37,11 +42,20 @@ class _Bridge:
         muted = self._body.on_toggle_mute()
         self._body.say("Okay, I'll stay quiet." if muted else "Yay, I can talk again!", "cute" if muted else "happy")
 
+    def next_voice(self):
+        self._body.on_next_voice()
+
     def quiet(self, minutes):
         self._body.on_quiet(int(minutes))
 
+    def hide(self):
+        self._body.on_hide()
+
     def quit(self):
         self._body.on_quit()
+
+    def set_shape(self, rects, dpr):
+        self._body._set_shape(rects, float(dpr))
 
     def move_by(self, dx, dy):
         w = self._body.window
@@ -62,7 +76,7 @@ class _Bridge:
 class Body3D:
     def __init__(self, settings: dict):
         size = settings["buddy"]["size"]
-        self.width, self.height = int(size * 2.1), int(size * 2.55)
+        self.width, self.height = int(size * 2.4), int(size * 2.9)
         screen = webview.screens[0] if webview.screens else None
         self.screen_w = screen.width if screen else 1920
         self.screen_h = screen.height if screen else 1080
@@ -74,7 +88,9 @@ class Body3D:
         self.on_text = lambda text: None
         self.on_pet = lambda: None
         self.on_toggle_mute = lambda: False
+        self.on_next_voice = lambda: None
         self.on_quiet = lambda minutes: None
+        self.on_hide = self.hide
         self.on_quit = self.quit
         self.on_ready = lambda: None
 
@@ -82,12 +98,15 @@ class Body3D:
         self._pending: list[str] = []
         self._lock = threading.Lock()
         self._walk_x = None
+        self._hwnd = None
         self.visible = True
         self.window = webview.create_window(
             "Nova", url=str(BODY), js_api=_Bridge(self), width=self.width, height=self.height, x=x, y=y,
             frameless=True, easy_drag=False, on_top=True, transparent=True, resizable=False,
-            background_color="#000000", shadow=False,
+            background_color="#F4F1F3", shadow=False,
         )
+        if IS_WINDOWS:
+            self.window.events.shown += self._prepare_native_window
 
     # thread-safe public API (same as the 2D Buddy)
     def set_emotion(self, emotion: str, hold: float = 40.0):
@@ -138,6 +157,8 @@ class Body3D:
         with self._lock:
             self._ready = True
             pending, self._pending = self._pending, []
+        if IS_WINDOWS:
+            self._js("nova.enableShaped()")
         for code in pending:
             self._js(code)
         self.on_ready()
@@ -146,9 +167,66 @@ class Body3D:
         if IS_WINDOWS:
             threading.Thread(target=self._follow_cursor, daemon=True, name="cursor").start()
 
+    # Windows: shaped window
+    def _find_hwnd(self):
+        if self._hwnd:
+            return self._hwnd
+        try:
+            self._hwnd = int(self.window.native.Handle.ToInt64())
+        except Exception:
+            self._hwnd = ctypes.windll.user32.FindWindowW(None, "Nova") or None
+        return self._hwnd
+
+    def _prepare_native_window(self):
+        """Hide everything until the first silhouette arrives, and keep Nova off the taskbar."""
+        hwnd = self._find_hwnd()
+        if not hwnd:
+            return
+        user32, gdi32 = ctypes.windll.user32, ctypes.windll.gdi32
+        user32.SetWindowRgn(ctypes.c_void_p(hwnd), ctypes.c_void_p(gdi32.CreateRectRgn(0, 0, 0, 0)), True)
+        GWL_EXSTYLE, WS_EX_TOOLWINDOW, WS_EX_APPWINDOW = -20, 0x00000080, 0x00040000
+        get_style = getattr(user32, "GetWindowLongPtrW", user32.GetWindowLongW)
+        set_style = getattr(user32, "SetWindowLongPtrW", user32.SetWindowLongW)
+        get_style.restype = set_style.restype = ctypes.c_ssize_t
+        get_style.argtypes = [ctypes.c_void_p, ctypes.c_int]
+        set_style.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_ssize_t]
+        style = get_style(hwnd, GWL_EXSTYLE)
+        set_style(hwnd, GWL_EXSTYLE, (style | WS_EX_TOOLWINDOW) & ~WS_EX_APPWINDOW)
+
+    def _set_shape(self, rects, dpr: float):
+        hwnd = self._find_hwnd()
+        if not hwnd:
+            return
+        from ctypes import wintypes
+
+        class RGNDATAHEADER(ctypes.Structure):
+            _fields_ = [("dwSize", wintypes.DWORD), ("iType", wintypes.DWORD), ("nCount", wintypes.DWORD),
+                        ("nRgnSize", wintypes.DWORD), ("rcBound", wintypes.RECT)]
+
+        boxes = []
+        for x, y, w, h in rects:
+            l, t = int(x * dpr), int(y * dpr)
+            boxes.append(wintypes.RECT(l, t, max(l + 1, int((x + w) * dpr + 0.5)), max(t + 1, int((y + h) * dpr + 0.5))))
+        gdi32, user32 = ctypes.windll.gdi32, ctypes.windll.user32
+        if not boxes:
+            rgn = gdi32.CreateRectRgn(0, 0, 0, 0)
+        else:
+            class RGNDATA(ctypes.Structure):
+                _fields_ = [("rdh", RGNDATAHEADER), ("Buffer", wintypes.RECT * len(boxes))]
+
+            data = RGNDATA()
+            bound = wintypes.RECT(min(b.left for b in boxes), min(b.top for b in boxes),
+                                  max(b.right for b in boxes), max(b.bottom for b in boxes))
+            data.rdh = RGNDATAHEADER(ctypes.sizeof(RGNDATAHEADER), 1, len(boxes), 16 * len(boxes), bound)
+            data.Buffer = (wintypes.RECT * len(boxes))(*boxes)
+            gdi32.ExtCreateRegion.restype = ctypes.c_void_p
+            gdi32.ExtCreateRegion.argtypes = [ctypes.c_void_p, wintypes.DWORD, ctypes.c_void_p]
+            rgn = gdi32.ExtCreateRegion(None, ctypes.sizeof(data), ctypes.byref(data))
+        user32.SetWindowRgn.argtypes = [ctypes.c_void_p, ctypes.c_void_p, wintypes.BOOL]
+        user32.SetWindowRgn(hwnd, rgn, True)  # Windows owns the region now
+
     def _follow_cursor(self):
         """Send the mouse position so Nova's eyes follow it anywhere on screen."""
-        import ctypes
         from ctypes import wintypes
 
         pt = wintypes.POINT()

@@ -47,6 +47,8 @@ class NovaApp:
             self.body.on_pet = self._petted
             self.body.on_toggle_mute = self._toggle_mute
             self.body.on_quiet = self.set_quiet
+            self.body.on_next_voice = self.next_voice
+            self.body.on_hide = self.hide
             self.body.on_quit = self.shutdown
             from nova.companion import Companion
             self.companion = Companion(self, settings)
@@ -67,6 +69,8 @@ class NovaApp:
         try:
             from nova.speaker import Speaker
             self.speaker = Speaker(self.settings)
+            if self.memory.data.get("voice"):
+                self.speaker.voice = self.memory.data["voice"]
         except Exception as e:
             print(f"[nova] voice output off ({e})")
         try:
@@ -113,6 +117,19 @@ class NovaApp:
             self.body.show()
             self.express("Peekaboo!", "excited")
 
+    def hide(self):
+        if self.body:
+            self.express("Okay, hiding! Click the tray icon or press Ctrl+Alt+N to bring me back.", "cute")
+            self.body.after(2500, self.body.hide)
+
+    def next_voice(self):
+        if not self.speaker:
+            return self.express("My voice is turned off in settings.", "concerned")
+        name = self.speaker.next_voice()
+        self.memory.data["voice"] = self.speaker.voice
+        self.memory.save()
+        self.express(f"Hi, I'm Nova with {name}'s voice. Do you like this one?", "happy")
+
     def listen_after_speaking(self):
         """After Nova asks a question, listen for the answer without needing the wake word."""
         if self.listener:
@@ -123,6 +140,9 @@ class NovaApp:
         self._jobs.put((text, audio))
 
     def listen_now(self):
+        if self.body and not getattr(self.body, "visible", True):
+            self.body.show()
+            self.express("I'm back!", "excited")
         if self.listener:
             self.listener.listen_now()
             self._show("listening")
@@ -246,8 +266,7 @@ class NovaApp:
         lines = [
             ("Brain", self.check_brain()),
             ("Body", f"{body} - look at the {self.settings['buddy']['corner']} of your screen" if self.body else body),
-            ("Voice", (f"{self.speaker.engine} voice" + (" (" + self.settings['voice']['neural_voice'] + ")"
-                       if self.speaker.engine == "neural" else "")) if self.speaker else "off"),
+            ("Voice", f"{self.speaker.voice_name()} (click Nova > Change my voice)" if self.speaker else "off"),
             ("Ears", ("listening for 'Hey Nova'" if self.settings["voice"]["wake_word"] else "click/hotkey only")
              if self.listener else "off (no microphone) - double-click Nova to type"),
             ("Pet", self.pet),
@@ -256,7 +275,7 @@ class NovaApp:
         for k, v in lines:
             print(f"  {k:<6} {v}")
         if self.body:
-            print("\n  Click her to talk, double-click to type, right-click for the menu.")
+            print("\n  Click her for options (talk, moves, voice, quiet, turn off). Double-click to type.")
             print("  Turn her off from the tray icon, the right-click menu, or by closing this window.\n")
 
     # run
@@ -288,6 +307,8 @@ class NovaApp:
             print(f"[nova] tray icon off ({e})")
         self.body.on_ready = lambda: self.companion.welcome("start")
         self.body.run()
+        import os
+        os._exit(0)  # window closed: stop the mic, voice and tray threads too
 
     def run_terminal(self):
         self._start_listener()

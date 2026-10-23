@@ -9,12 +9,23 @@ import queue
 import re
 import threading
 
-# per emotion: (rate %, pitch Hz, volume %) for neural voices
+# Natural voices to choose from ("Change my voice" in Nova's menu cycles through them).
+VOICES = [
+    ("en-US-AvaNeural", "Ava"),             # warm, very natural (default)
+    ("en-US-EmmaNeural", "Emma"),           # bright and friendly
+    ("en-IN-NeerjaExpressiveNeural", "Neerja"),  # Indian English, expressive
+    ("en-US-JennyNeural", "Jenny"),         # clear and cheerful
+    ("en-GB-SoniaNeural", "Sonia"),         # British
+    ("en-US-AnaNeural", "Ana"),             # a child's voice
+]
+
+# per emotion: (rate %, volume %). No pitch shifting: it makes neural voices sound robotic.
 NEURAL_STYLE = {
-    "excited": (+18, +40, +5), "happy": (+8, +25, 0), "cute": (+2, +45, -5), "love": (-6, +30, -10),
-    "neutral": (0, +15, 0), "caring": (-14, +5, -15), "concerned": (-8, 0, -5), "sad": (-18, -15, -20),
-    "angry": (+6, -10, +10), "sleepy": (-25, -20, -25), "surprised": (+12, +55, +5), "thinking": (-6, +5, -5),
+    "excited": (+10, +5), "happy": (+5, 0), "cute": (0, -5), "love": (-4, -8),
+    "neutral": (0, 0), "caring": (-8, -12), "concerned": (-5, -5), "sad": (-10, -15),
+    "angry": (+4, +8), "sleepy": (-14, -20), "surprised": (+8, +5), "thinking": (-4, -5),
 }
+
 # per emotion: (rate change in wpm, volume 0-1) for the system voice
 SYSTEM_STYLE = {
     "excited": (+30, 1.0), "happy": (+12, 1.0), "cute": (+5, 0.95), "love": (-5, 0.9),
@@ -34,6 +45,7 @@ class Speaker:
     def __init__(self, settings: dict):
         self.cfg = settings["voice"]
         self.engine = self.cfg.get("engine", "neural")
+        self.voice = self.cfg.get("neural_voice", VOICES[0][0])
         self.muted = False
         self._q: queue.Queue = queue.Queue()
         self._system = None
@@ -46,6 +58,17 @@ class Speaker:
                 on_end()
             return
         self._q.put((clean_for_speech(text), emotion, on_start, on_end))
+
+    def next_voice(self) -> str:
+        """Switch to the next natural voice; returns its friendly name."""
+        ids = [v for v, _ in VOICES]
+        i = (ids.index(self.voice) + 1) % len(VOICES) if self.voice in ids else 0
+        self.voice = VOICES[i][0]
+        self.engine = "neural"  # give the neural voice another try
+        return VOICES[i][1]
+
+    def voice_name(self) -> str:
+        return dict(VOICES).get(self.voice, self.voice) if self.engine == "neural" else "offline system voice"
 
     def stop(self):
         while not self._q.empty():
@@ -85,12 +108,12 @@ class Speaker:
         import miniaudio
         import numpy as np
 
-        rate, pitch, volume = NEURAL_STYLE.get(emotion, (0, 15, 0))
+        rate, volume = NEURAL_STYLE.get(emotion, (0, 0))
         rate += int(self.cfg.get("voice_speed", 0))
-        pitch += int(self.cfg.get("voice_pitch", 0))
+        pitch = int(self.cfg.get("voice_pitch", 0))
 
         async def synth():
-            comm = edge_tts.Communicate(text, self.cfg.get("neural_voice", "en-US-AnaNeural"),
+            comm = edge_tts.Communicate(text, self.voice,
                                         rate=f"{rate:+d}%", pitch=f"{pitch:+d}Hz", volume=f"{volume:+d}%")
             data = bytearray()
             async for chunk in comm.stream():
