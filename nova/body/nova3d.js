@@ -649,8 +649,24 @@ function hitTest(ev) {
 
 let press = null, clickTimer = null;
 canvas.addEventListener('mousedown', ev => { if (ev.button === 0) press = { x: ev.screenX, y: ev.screenY, lx: ev.screenX, ly: ev.screenY, moved: false }; });
+// Electron: the window ignores the mouse (clicks reach your desktop) except over Nova, Pip or the menu
+const ELECTRON = !!window.pywebview?.electron;
+let catching = false, menuTimer = null;
+function overSomething(ev) {
+  if (press) return true;
+  if (menu.classList.contains('show') && menu.contains(ev.target)) return true;
+  if (input.classList.contains('show') && ev.target === input) return true;
+  return !!hitTest(ev);
+}
+function setCatching(on) {
+  if (!ELECTRON || on === catching) return;
+  catching = on;
+  bridge()?.set_ignore(!on);
+}
+
 window.addEventListener('mousemove', ev => {
   if (!bridge()) pointer((ev.clientX / innerWidth - 0.6) * 2, (ev.clientY / innerHeight - 0.45) * 2);
+  setCatching(overSomething(ev));
   if (!press) return;
   const dx = ev.screenX - press.lx, dy = ev.screenY - press.ly;
   if (Math.abs(ev.screenX - press.x) + Math.abs(ev.screenY - press.y) > 5) press.moved = true;
@@ -673,6 +689,8 @@ window.addEventListener('contextmenu', ev => { ev.preventDefault(); openMenu(ev.
 window.addEventListener('blur', closeMenu); // clicked somewhere else on the desktop
 
 function openMenu(x, y) {
+  clearTimeout(menuTimer);
+  menuTimer = setTimeout(closeMenu, 10000); // clicking the desktop can't reach us, so close by itself
   menu.classList.add('show');
   const mw = menu.offsetWidth, mh = menu.offsetHeight;
   menu.style.left = Math.max(4, Math.min(x - mw / 2, innerWidth - mw - 4)) + 'px';
@@ -696,7 +714,7 @@ menu.addEventListener('click', ev => {
   else perform(act);
 });
 
-function openInput() { touch(); input.classList.add('show'); input.focus(); }
+function openInput() { touch(); input.classList.add('show'); bridge()?.focus?.(); setTimeout(() => input.focus(), 50); setCatching(true); }
 input.addEventListener('keydown', ev => {
   if (ev.key === 'Escape') { input.value = ''; input.classList.remove('show'); }
   if (ev.key === 'Enter') { const text = input.value.trim(); input.value = ''; input.classList.remove('show'); if (text) bridge()?.text(text); }

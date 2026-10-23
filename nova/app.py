@@ -56,12 +56,20 @@ class NovaApp:
         threading.Thread(target=self._worker, daemon=True, name="brain").start()
 
     def _make_body(self):
-        if self.settings["buddy"].get("style", "3d") == "3d":
+        buddy = self.settings["buddy"]
+        if buddy.get("style", "3d") == "3d":
+            renderer = buddy.get("renderer", "auto")
+            if renderer in ("auto", "electron"):
+                try:
+                    from nova.body_electron import BodyElectron
+                    return BodyElectron(self.settings)
+                except Exception as e:
+                    print(f"[nova] transparent window unavailable: {e}")
             try:
                 from nova.body3d import Body3D
                 return Body3D(self.settings)
             except Exception as e:
-                print(f"[nova] 3D body unavailable ({e}); using the 2D body. Install with: pip install pywebview")
+                print(f"[nova] 3D window unavailable ({e}); using the 2D body.")
         from nova.buddy import Buddy
         return Buddy(self.settings)
 
@@ -159,6 +167,9 @@ class NovaApp:
 
     def handle(self, text: str, audio=None):
         self._busy_until = time.time() + 120
+        started = time.time()
+        print(f"\nYou: {text}")
+        print("[nova] thinking...", flush=True)
         if self.body:
             self.body.wake()
             self.body.set_activity("thinking")
@@ -166,12 +177,25 @@ class NovaApp:
         if audio is not None and self.tone:
             from nova.listener import SAMPLE_RATE
             tone = self.tone.analyze(audio, SAMPLE_RATE, text)
-        reply = self.brain.respond(text, tone=tone)
+
+        said = []
+
+        def on_sentence(sentence, emotion):
+            # speak each sentence as soon as it's ready; the bubble shows it the moment she says it
+            if not said:
+                print(f"[nova] first words after {time.time() - started:.1f}s", flush=True)
+            said.append(sentence)
+            self.express(" ".join(said), emotion, speak=sentence)
+
+        reply = self.brain.respond(text, tone=tone, on_sentence=on_sentence)
         self._brain_ok = reply.ok
         mood = reply.user_mood
-        print(f"\nYou ({mood.describe()}): {text}\nNova [{reply.nova_emotion}]: {reply.text}"
+        print(f"Nova [{reply.nova_emotion}] ({mood.describe()} detected, {time.time() - started:.1f}s): {reply.text}"
               + (f"   (used: {', '.join(reply.tools_used)})" if reply.tools_used else ""))
-        self.express(reply.text, reply.nova_emotion)
+        if not said:  # nothing streamed (e.g. the brain is offline)
+            self.express(reply.text, reply.nova_emotion)
+        elif self.body:
+            self.body.set_activity("idle")
         self._react_with_body(mood, reply)
         return reply
 
@@ -189,12 +213,19 @@ class NovaApp:
             self.body.perform("hug")
 
     # output
-    def express(self, text: str, emotion: str):
-        if self.body:
+    def express(self, text: str, emotion: str, speak: str | None = None):
+        """Show `text` in the bubble and say `speak` (default: all of it), in sync."""
+        speak = text if speak is None else speak
+        voice_on = self.speaker and not self.speaker.muted
+        if self.body and not voice_on:
             self.body.set_activity("idle")
             self.body.say(text, emotion)
-        if self.speaker and not self.speaker.muted:
-            self.speaker.say(text, emotion, on_start=self._speaking_started, on_end=self._speaking_ended)
+        if voice_on:
+            def started():
+                if self.body:
+                    self.body.say(text, emotion)  # bubble appears exactly when she starts talking
+                self._speaking_started()
+            self.speaker.say(speak, emotion, on_start=started, on_end=self._speaking_ended)
 
     def notify(self, text: str, emotion: str = "neutral"):
         """For skills (reminders) to make Nova speak up on her own."""
@@ -207,6 +238,8 @@ class NovaApp:
         self._show("speaking")
 
     def _speaking_ended(self):
+        if self.speaker and not self.speaker.idle:
+            return  # more sentences coming
         if self.listener:
             threading.Timer(0.4, self.listener.paused.clear).start()  # let the room echo fade
         self._show("idle")
@@ -214,6 +247,15 @@ class NovaApp:
     def _show(self, activity: str):
         if self.body:
             self.body.set_activity(activity)
+
+    def _ears_state(self, state: str):
+        if state == "missed":
+            print("[ears] didn't catch anything")
+            self.express("Hmm, I didn't catch that. Try again, or double-click me to type!", "concerned")
+        elif state.startswith("heard:"):
+            print(f"[ears] heard: {state[6:]}")
+        else:
+            self._show(state)
 
     def _petted(self):
         line, emotion = random.choice(PET_LINES)
@@ -262,7 +304,8 @@ class NovaApp:
 
     def startup_report(self):
         body = type(self.body).__name__ if self.body else "terminal"
-        body = {"Body3D": "3D robot", "Buddy": "2D robot"}.get(body, body)
+        body = {"BodyElectron": "3D robot (transparent window)", "Body3D": "3D robot (basic window)",
+                "Buddy": "2D robot"}.get(body, body)
         lines = [
             ("Brain", self.check_brain()),
             ("Body", f"{body} - look at the {self.settings['buddy']['corner']} of your screen" if self.body else body),
@@ -279,6 +322,11 @@ class NovaApp:
             print("  Turn her off from the tray icon, the right-click menu, or by closing this window.\n")
 
     # run
+    def _warm_up(self):
+        t = time.time()
+        if self.brain.warm_up():
+            print(f"[nova] brain loaded in {time.time() - t:.0f}s - I'm ready to chat!")
+
     def _start_hotkey(self):
         try:
             from pynput import keyboard
@@ -293,7 +341,7 @@ class NovaApp:
             target=self.listener.run, daemon=True, name="ears",
             kwargs=dict(on_wake=lambda: self.express(random.choice(WAKE_LINES), "happy"),
                         on_command=lambda text, audio: self.submit(text, audio),
-                        on_state=self._show),
+                        on_state=self._ears_state),
         ).start()
 
     def run_gui(self):
@@ -306,6 +354,8 @@ class NovaApp:
         except Exception as e:
             print(f"[nova] tray icon off ({e})")
         self.body.on_ready = lambda: self.companion.welcome("start")
+        if self._brain_ok:
+            threading.Thread(target=self._warm_up, daemon=True).start()
         self.body.run()
         import os
         os._exit(0)  # window closed: stop the mic, voice and tray threads too

@@ -15,6 +15,7 @@ model = "qwen2.5:7b"
 host = "http://localhost:11434"
 temperature = 0.7
 history_turns = 10          # how many past messages Nova keeps in mind
+# Slow replies? Use model = "qwen2.5:3b" (about 2x faster). The console shows "first words after Xs".
 
 [voice]
 enabled = true              # false = typing only (no mic / speakers needed)
@@ -33,6 +34,7 @@ hotkey = "<ctrl>+<alt>+n"   # press anywhere to talk to Nova
 
 [emotion]
 use_voice_tone = true       # read your mood from how you sound, not just what you say
+llm_mood = false            # true = extra AI call to read your mood (more accurate, but slower replies)
 
 [pet]
 name = "Pip"                # Nova's robo-kitty (click it to give it head pats)
@@ -50,4 +52,4 @@ late_night_hour = 23        # after this hour, gently tell you to sleep
 style = "3d"                # "3d" (real 3D robot) or "2d" (lightweight)
 size = 120                  # robot size: 90 = tiny, 120 = small, 160 = medium
 corner = "bottom-right"     # where Nova sits at startup
-transparency = "shape"      # how the background is removed on Windows: "shape" (default) or "colorkey" (backup)
+renderer = "auto"           # "auto"/"electron": truly transparent window (needs Node.js), "webview": basic window

@@ -90,12 +90,14 @@ class Listener:
             if self._manual.is_set():
                 self._manual.clear()
                 on_state("listening")
-                audio = self._record_utterance(wait_for_speech=6.0)
+                audio = self._record_utterance(wait_for_speech=7.0)
                 on_state("idle")
-                if audio is not None:
-                    text = self.transcribe(audio)
-                    if text:
-                        on_command(text, audio)
+                text = self.transcribe(audio) if audio is not None else ""
+                if text:
+                    on_state(f"heard:{text}")
+                    on_command(text, audio)
+                else:
+                    on_state("missed")
                 continue
             if not self.cfg.get("wake_word", True) or not self.wake_word_allowed():
                 time.sleep(0.1)

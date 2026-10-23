@@ -52,7 +52,8 @@ flowchart LR
    ollama pull qwen2.5:7b
    ```
    On a low-end laptop, use `qwen2.5:3b` and change `model` in `settings.toml`.
-2. **Install Nova** (Python 3.11+):
+2. **Install Node.js** (LTS) from https://nodejs.org. Nova uses it for her see-through window. The first start sets it up automatically (about a minute).
+3. **Install Nova** (Python 3.11+):
    ```bash
    git clone https://github.com/HemashreeVI/JarvisAI.git Nova
    cd Nova
@@ -60,8 +61,8 @@ flowchart LR
    venv\Scripts\activate
    pip install -r requirements.txt
    ```
-3. **Edit `settings.toml`**: your name, city, voice, the pet's name, and companion options.
-4. **Run**:
+4. **Edit `settings.toml`**: your name, city, voice, the pet's name, and companion options.
+5. **Run**:
    ```bash
    python main.py                 # 3D Nova on your desktop
    python main.py --autostart on  # start Nova every time you log in
@@ -130,7 +131,8 @@ nova/
   speaker.py         neural voice styled by mood (+ offline backup)
   companion.py       welcome/goodbye, check-ins, breaks, activity log
   presence.py        lid open/close, lock/unlock, sleep/wake, active app (Windows)
-  body3d.py          the transparent always-on-top 3D window
+  body_electron.py   the see-through always-on-top 3D window (Electron, in shell/)
+  body3d.py          fallback 3D window (pywebview)
   body/              three.js: Nova's 3D body, eyes (eyes.js) and Pip
   buddy.py           lightweight 2D body (fallback)
   memory.py          long-term memory and mood diary

@@ -47,10 +47,18 @@ class Speaker:
         self.engine = self.cfg.get("engine", "neural")
         self.voice = self.cfg.get("neural_voice", VOICES[0][0])
         self.muted = False
-        self._q: queue.Queue = queue.Queue()
+        self._q: queue.Queue = queue.Queue()       # sentences waiting to be turned into audio
+        self._play_q: queue.Queue = queue.Queue()  # audio waiting to be played
         self._system = None
         self._stop = threading.Event()
-        threading.Thread(target=self._worker, daemon=True, name="speaker").start()
+        self._playing = False
+        # two stages: the next sentence is synthesized while the current one plays (no gaps)
+        threading.Thread(target=self._synth_worker, daemon=True, name="voice-synth").start()
+        threading.Thread(target=self._play_worker, daemon=True, name="voice-play").start()
+
+    @property
+    def idle(self) -> bool:
+        return self._q.empty() and self._play_q.empty() and not self._playing
 
     def say(self, text: str, emotion: str = "neutral", on_start=None, on_end=None):
         if self.muted or not text.strip():
@@ -71,34 +79,42 @@ class Speaker:
         return dict(VOICES).get(self.voice, self.voice) if self.engine == "neural" else "offline system voice"
 
     def stop(self):
-        while not self._q.empty():
-            self._q.get_nowait()
+        for q in (self._q, self._play_q):
+            while not q.empty():
+                q.get_nowait()
         self._stop.set()
         if self._system:
             self._system.stop()
 
-    def _worker(self):
+    def _synth_worker(self):
         while True:
             text, emotion, on_start, on_end = self._q.get()
+            item = ("system", text, emotion)
+            if self.engine == "neural":
+                try:
+                    audio, rate = self._neural_audio(text, emotion)
+                    item = ("audio", audio, rate)
+                except Exception as e:
+                    print(f"[voice] natural voice unavailable ({e}); using the offline voice")
+                    self.engine = "system"
+            self._play_q.put((item, on_start, on_end))
+
+    def _play_worker(self):
+        while True:
+            item, on_start, on_end = self._play_q.get()
+            self._playing = True
             self._stop.clear()
             try:
-                if self.engine == "neural":
-                    try:
-                        audio, rate = self._neural_audio(text, emotion)
-                    except Exception as e:
-                        print(f"[voice] neural voice unavailable ({e}); using the system voice")
-                        self.engine = "system"
-                    else:
-                        if on_start:
-                            on_start()
-                        self._play(audio, rate)
-                        continue
                 if on_start:
                     on_start()
-                self._system_say(text, emotion)
+                if item[0] == "audio":
+                    self._play(item[1], item[2])
+                else:
+                    self._system_say(item[1], item[2])
             except Exception as e:
                 print("[voice]", e)
             finally:
+                self._playing = False
                 if on_end:
                     on_end()
 
