@@ -42,18 +42,22 @@ class NovaApp:
             self._init_voice()
         if gui:
             self.body = self._make_body()
-            self.body.on_click = self.listen_now
-            self.body.on_text = lambda text: self.submit(text)
-            self.body.on_pet = self._petted
-            self.body.on_toggle_mute = self._toggle_mute
-            self.body.on_quiet = self.set_quiet
-            self.body.on_next_voice = self.next_voice
-            self.body.on_hide = self.hide
-            self.body.on_quit = self.shutdown
+            self._wire_body()
             from nova.companion import Companion
             self.companion = Companion(self, settings)
             self.brain.context_fn = self.companion.describe_now
         threading.Thread(target=self._worker, daemon=True, name="brain").start()
+
+    def _wire_body(self):
+        self.body.on_click = self.listen_now
+        self.body.on_text = lambda text: self.submit(text)
+        self.body.on_pet = self._petted
+        self.body.on_toggle_mute = self._toggle_mute
+        self.body.on_quiet = self.set_quiet
+        self.body.on_next_voice = self.next_voice
+        self.body.on_hide = self.hide
+        self.body.on_quit = self.shutdown
+        self.body.on_ready = lambda: self.companion.welcome("start") if self.companion else None
 
     def _make_body(self):
         buddy = self.settings["buddy"]
@@ -353,10 +357,15 @@ class NovaApp:
             self.tray = start_tray(self)
         except Exception as e:
             print(f"[nova] tray icon off ({e})")
-        self.body.on_ready = lambda: self.companion.welcome("start")
         if self._brain_ok:
             threading.Thread(target=self._warm_up, daemon=True).start()
         self.body.run()
+        if getattr(self.body, "failed", False):  # transparent window couldn't start: use the basic one
+            print("[nova] using the basic window instead")
+            from nova.body3d import Body3D
+            self.body = Body3D(self.settings)
+            self._wire_body()
+            self.body.run()
         import os
         os._exit(0)  # window closed: stop the mic, voice and tray threads too
 

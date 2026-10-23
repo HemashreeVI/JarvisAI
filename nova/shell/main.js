@@ -1,16 +1,23 @@
 // Nova's window: truly transparent (per-pixel), frameless, always on top, off the taskbar.
-// Talks to Python over stdin/stdout, one JSON message per line.
+// Talks to Python over a local socket (127.0.0.1), one JSON message per line.
+// (Not stdin/stdout: on Windows a GUI app's console pipes are unreliable.)
 const { app, BrowserWindow, ipcMain, screen, protocol, net } = require('electron');
 const path = require('path');
 const readline = require('readline');
+const sockets = require('net');
 const { pathToFileURL } = require('url');
 
 const BODY = path.join(__dirname, '..', 'body');
 const opts = JSON.parse(process.env.NOVA_OPTS || '{}');
-const send = msg => process.stdout.write(JSON.stringify(msg) + '\n');
+const link = sockets.connect(opts.port, '127.0.0.1');
+link.setEncoding('utf8');
+link.on('error', err => { console.error('link error', err); app.quit(); });
+link.on('close', () => app.quit()); // Python stopped: close too
+const send = msg => { if (!link.destroyed) link.write(JSON.stringify(msg) + '\n'); };
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'nova', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
+app.commandLine.appendSwitch('ignore-gpu-blocklist');
 if (!app.requestSingleInstanceLock()) app.quit();
 
 let win = null;
@@ -33,6 +40,10 @@ function createWindow() {
   win.setAlwaysOnTop(true, 'screen-saver');
   win.setVisibleOnAllWorkspaces(true);
   win.setIgnoreMouseEvents(true, { forward: true }); // clicks pass through until the mouse is over Nova
+  // report problems to Python's console instead of failing silently
+  win.webContents.on('console-message', (e) => { if (e.level === 'error' || e.level === 'warning') send({ event: 'log', args: [`page: ${e.message}`] }); });
+  win.webContents.on('did-fail-load', (_e, code, desc, url) => send({ event: 'log', args: [`load failed ${code} ${desc} ${url}`] }));
+  win.webContents.on('render-process-gone', (_e, d) => send({ event: 'log', args: [`renderer gone: ${d.reason}`] }));
   win.loadURL('nova://app/index.html');
   win.once('ready-to-show', () => win.showInactive());
   win.on('closed', () => { win = null; app.quit(); });
@@ -78,7 +89,7 @@ ipcMain.handle('nudge', (_e, dx) => {
   return { hit_edge: hit };
 });
 
-readline.createInterface({ input: process.stdin }).on('line', line => {
+readline.createInterface({ input: link }).on('line', line => {
   let msg;
   try { msg = JSON.parse(line); } catch { return; }
   if (!win) return;
@@ -87,5 +98,4 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
   else if (msg.cmd === 'hide') win.hide();
   else if (msg.cmd === 'quit') app.quit();
 });
-process.stdin.on('end', () => app.quit()); // Python stopped: close too
 app.on('window-all-closed', () => app.quit());

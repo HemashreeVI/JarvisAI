@@ -2,17 +2,23 @@
 
 Only Nova and Pip are drawn - no background box - and clicks pass through to your
 desktop everywhere except on her. Python and the window talk over stdin/stdout,
-one JSON message per line. Same interface as the other bodies.
+one JSON message per line, over a local socket. Same interface as the other bodies.
+If the window can't start, `failed` is set and the app falls back to the basic window.
 """
 import json
 import os
 import platform
 import shutil
+import socket
 import subprocess
 import threading
+import time
 from pathlib import Path
 
+from nova.config import DATA_DIR
+
 SHELL = Path(__file__).resolve().parent / "shell"
+LOG = DATA_DIR / "window.log"
 IS_WINDOWS = platform.system() == "Windows"
 
 
@@ -69,6 +75,8 @@ class BodyElectron:
         self.on_ready = lambda: None
 
         self.proc = None
+        self.conn = None
+        self.failed = False
         self.visible = True
         self._ready = False
         self._pending: list[dict] = []
@@ -105,14 +113,28 @@ class BodyElectron:
         self._send({"cmd": "quit"}, force=True)
 
     def run(self):
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind(("127.0.0.1", 0))
+        server.listen(1)
+        server.settimeout(0.5)
         env = {**os.environ, "NOVA_OPTS": json.dumps({"width": self.width, "height": self.height,
-                                                      "corner": self.corner})}
+                                                      "corner": self.corner, "port": server.getsockname()[1]})}
         env.pop("ELECTRON_RUN_AS_NODE", None)
-        self.proc = subprocess.Popen(
-            [str(self.exe), str(SHELL)], cwd=SHELL, env=env, text=True, encoding="utf-8",
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=1,
-        )
-        for line in self.proc.stdout:
+        log = open(LOG, "w", encoding="utf-8", errors="replace")
+        extra = os.environ.get("NOVA_ELECTRON_FLAGS", "").split()  # for testing / troubleshooting
+        self.proc = subprocess.Popen([str(self.exe), *extra, str(SHELL)], cwd=SHELL, env=env,
+                                     stdin=subprocess.DEVNULL, stdout=log, stderr=log)
+        deadline = time.time() + 40
+        while self.conn is None and time.time() < deadline and self.proc.poll() is None:
+            try:
+                self.conn, _ = server.accept()
+            except socket.timeout:
+                pass
+        server.close()
+        if self.conn is None:
+            self._give_up("the window didn't start")
+            return
+        for line in self.conn.makefile("r", encoding="utf-8", errors="replace"):
             try:
                 msg = json.loads(line)
             except json.JSONDecodeError:
@@ -122,6 +144,20 @@ class BodyElectron:
             except Exception as e:
                 print("[body]", e)
         self.proc.wait()
+        if not self._ready:
+            self._give_up("the window closed before Nova appeared")
+
+    def _give_up(self, why: str):
+        self.failed = True
+        if self.proc and self.proc.poll() is None:
+            self.proc.kill()
+        try:
+            tail = [l for l in LOG.read_text(encoding="utf-8", errors="replace").splitlines() if l.strip()][-8:]
+        except OSError:
+            tail = []
+        print(f"[nova] transparent window failed: {why}. Details in {LOG}")
+        for line in tail:
+            print("   ", line[:200])
 
     # internals
     def _dispatch(self, event: str, args: list):
@@ -160,10 +196,9 @@ class BodyElectron:
             if not self._ready and not force:
                 self._pending.append(msg)
                 return
-            if not self.proc or self.proc.poll() is not None:
+            if not self.conn:
                 return
             try:
-                self.proc.stdin.write(json.dumps(msg) + "\n")
-                self.proc.stdin.flush()
-            except (OSError, ValueError):
+                self.conn.sendall((json.dumps(msg) + "\n").encode("utf-8"))
+            except OSError:
                 pass
