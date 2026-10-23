@@ -226,6 +226,39 @@ class NovaApp:
             return f"Good {part}, {name}. Last time you seemed {last['emotion']}. Feeling any better?", "caring"
         return f"Good {part}, {name}! {self.pet} and I are ready. What shall we do?", "happy"
 
+    def check_brain(self) -> str:
+        """Is Ollama running and is the model downloaded?"""
+        from ollama import Client
+        model = self.settings["brain"]["model"]
+        try:
+            names = [m.model for m in Client(host=self.settings["brain"]["host"], timeout=4).list().models]
+        except Exception:
+            self._brain_ok = False
+            return "NOT RUNNING - install/start Ollama (https://ollama.com), then restart Nova"
+        if not any(n == model or n.split(":")[0] == model or n == f"{model}:latest" for n in names):
+            self._brain_ok = False
+            return f"model missing - run:  ollama pull {model}"
+        return f"ok ({model})"
+
+    def startup_report(self):
+        body = type(self.body).__name__ if self.body else "terminal"
+        body = {"Body3D": "3D robot", "Buddy": "2D robot"}.get(body, body)
+        lines = [
+            ("Brain", self.check_brain()),
+            ("Body", f"{body} - look at the {self.settings['buddy']['corner']} of your screen" if self.body else body),
+            ("Voice", (f"{self.speaker.engine} voice" + (" (" + self.settings['voice']['neural_voice'] + ")"
+                       if self.speaker.engine == "neural" else "")) if self.speaker else "off"),
+            ("Ears", ("listening for 'Hey Nova'" if self.settings["voice"]["wake_word"] else "click/hotkey only")
+             if self.listener else "off (no microphone) - double-click Nova to type"),
+            ("Pet", self.pet),
+        ]
+        print("\n  ✦ Nova is awake ✦")
+        for k, v in lines:
+            print(f"  {k:<6} {v}")
+        if self.body:
+            print("\n  Click her to talk, double-click to type, right-click for the menu.")
+            print("  Turn her off from the tray icon, the right-click menu, or by closing this window.\n")
+
     # run
     def _start_hotkey(self):
         try:

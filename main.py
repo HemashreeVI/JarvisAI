@@ -7,9 +7,17 @@
     python main.py --autostart on|off   start Nova whenever you log in (Windows)
 """
 import argparse
+import os
+import warnings
 
-from nova.app import NovaApp
-from nova.config import load_settings
+# quiet the speech model's download warnings (harmless on Windows)
+os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
+os.environ.setdefault("HF_HUB_DISABLE_IMPLICIT_TOKEN", "1")
+os.environ.setdefault("HF_HUB_VERBOSITY", "error")
+warnings.filterwarnings("ignore", module="huggingface_hub")
+
+from nova.app import NovaApp  # noqa: E402
+from nova.config import load_settings  # noqa: E402
 
 
 def main():
@@ -30,7 +38,9 @@ def main():
         settings["voice"]["enabled"] = False
     if args.flat:
         settings["buddy"]["style"] = "2d"
+    print("Waking Nova up...")
     app = NovaApp(settings, gui=not args.terminal)
+    app.startup_report()
     if args.terminal:
         app.run_terminal()
     else:
