@@ -1,0 +1,20 @@
+# Core
+ollama>=0.4
+numpy
+psutil
+pillow
+pywebview>=5          # the transparent 3D window (uses Edge WebView2, built into Windows 10/11)
+pystray                # tray icon: hide / quiet / turn off
+
+# Voice
+faster-whisper         # offline speech-to-text
+sounddevice            # microphone + speaker
+edge-tts               # natural neural voice
+miniaudio              # decodes the neural voice audio
+pyttsx3                # offline backup voice
+pynput                       # global "talk" hotkey
+pyautogui; sys_platform != "win32"   # media keys on macOS/Linux (Windows uses built-in calls)
+
+# Optional extras - install only what you use:
+#   WhatsApp:  pip install pywhatkit
+#   Gmail:     pip install google-api-python-client google-auth-oauthlib
