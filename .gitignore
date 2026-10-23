@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+venv/
+.venv/
+.env
+
+# Nova's private memory, contacts, notes, reminders and Gmail tokens
+data/*
+!data/.gitkeep
+!data/contacts.example.json

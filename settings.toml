@@ -1,0 +1,52 @@
+# Nova settings. Edit freely - restart Nova after changing.
+# Private things (contacts, Gmail credentials) live in the data/ folder, which is never committed.
+
+[user]
+name = "Hema"
+city = "Chennai"            # used for weather
+news_region = "IN"          # Google News country code
+
+[brain]
+# Any Ollama model with tool support. Good choices:
+#   qwen2.5:7b   - best balance (needs ~8 GB RAM)      <- default
+#   llama3.1:8b  - also good
+#   qwen2.5:3b   - for low-end laptops (faster, a bit less smart)
+model = "qwen2.5:7b"
+host = "http://localhost:11434"
+temperature = 0.7
+history_turns = 10          # how many past messages Nova keeps in mind
+
+[voice]
+enabled = true              # false = typing only (no mic / speakers needed)
+stt_model = "base.en"       # faster-whisper model: tiny.en, base.en, small.en
+wake_word = true            # always listen for "Hey Nova"
+wake_words = ["nova", "hey nova", "hi nova", "okay nova"]
+engine = "neural"           # "neural" = natural cute voice (free, needs internet), "system" = offline PC voice
+neural_voice = "en-US-AnaNeural"   # cute & childlike. Others: en-US-JennyNeural, en-GB-MaisieNeural (young),
+                                   # en-IN-NeerjaNeural (Indian English), en-US-AriaNeural. List: edge-tts --list-voices
+voice_pitch = 0             # extra pitch in Hz (+20 = squeakier, -20 = deeper)
+voice_speed = 0             # extra speed in % (+10 = faster)
+tts_rate = 180              # system voice: words per minute (Nova adjusts this with her mood)
+tts_voice = "Zira"          # system voice: part of a voice name installed on your PC ("" = default)
+mic_sensitivity = 1.0       # raise to 1.5-2.0 if Nova doesn't hear you
+hotkey = "<ctrl>+<alt>+n"   # press anywhere to talk to Nova
+
+[emotion]
+use_voice_tone = true       # read your mood from how you sound, not just what you say
+
+[pet]
+name = "Pip"                # Nova's robo-kitty (click it to give it head pats)
+
+[companion]
+welcome = true              # excited hello every time you open the laptop / unlock / wake it
+goodbye = true              # says bye when you close the lid, lock or shut down
+watch_activity = true       # notices which app you're in (stays on your PC) for check-ins and breaks
+break_after_minutes = 50    # nudge you to take a break after this much non-stop work
+checkin_every_minutes = 90  # ask how you're doing
+fun_nudge_minutes = 40      # playful nudge after this long on YouTube/Instagram/games (daytime)
+late_night_hour = 23        # after this hour, gently tell you to sleep
+
+[buddy]
+style = "3d"                # "3d" (real 3D robot) or "2d" (lightweight)
+size = 190                  # robot size (the 3D window is about 2x this)
+corner = "bottom-right"     # where Nova sits at startup
