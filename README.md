@@ -53,7 +53,7 @@ flowchart LR
    ```
    On a low-end laptop, use `qwen2.5:3b` and change `model` in `settings.toml`.
 2. **Install Node.js** (LTS) from https://nodejs.org. Nova uses it for her see-through window. The first start sets it up automatically (about a minute).
-3. **Install Nova** (Python 3.11+):
+3. **Install Nova** (Python 3.11 to 3.14. Not 3.15 yet: many packages don't support it):
    ```bash
    git clone https://github.com/HemashreeVI/JarvisAI.git Nova
    cd Nova
@@ -64,6 +64,7 @@ flowchart LR
 4. **Edit `settings.toml`**: your name, city, voice, the pet's name, and companion options.
 5. **Run**:
    ```bash
+   start_nova.bat                 # double-click: picks the right Python for you
    python main.py                 # 3D Nova on your desktop
    python main.py --autostart on  # start Nova every time you log in
    python main.py --no-voice      # typing only

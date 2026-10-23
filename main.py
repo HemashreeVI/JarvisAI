@@ -18,6 +18,10 @@ warnings.filterwarnings("ignore", module="huggingface_hub")
 
 import sys  # noqa: E402
 
+if sys.version_info >= (3, 15):
+    print(f"\nYou're running Python {sys.version.split()[0]}, a preview version many of Nova's packages don't support yet.")
+    print("Start Nova with Python 3.14 instead:   py -3.14 main.py   (or double-click start_nova.bat)\n")
+
 try:
     from nova.app import NovaApp  # noqa: E402
     from nova.config import load_settings  # noqa: E402
@@ -25,7 +29,8 @@ except ModuleNotFoundError as e:
     print(f"\nNova is missing a package: {e.name}")
     print(f"This Python is: {sys.executable}")
     print("Install everything Nova needs into it with:\n")
-    print("    python -m pip install -r requirements.txt\n")
+    print(f"    py -{sys.version_info.major}.{sys.version_info.minor} -m pip install -r requirements.txt\n")
+    print("(Or start Nova with a Python that already has them:   py -3.14 main.py)\n")
     sys.exit(1)
 
 
