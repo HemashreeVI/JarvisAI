@@ -101,7 +101,7 @@ class SystemEvents:
         wc = WNDCLASSW(lpfnWndProc=self._wndproc, hInstance=hinst, lpszClassName="NovaPresence")
         user32.RegisterClassW(ctypes.byref(wc))
         # A hidden top-level window (message-only windows don't receive power broadcasts)
-        hwnd = user32.CreateWindowExW(0, "NovaPresence", "Nova", 0, 0, 0, 0, 0, None, None, hinst, None)
+        hwnd = user32.CreateWindowExW(0, "NovaPresence", "NovaPresence", 0, 0, 0, 0, 0, None, None, hinst, None)
         user32.RegisterPowerSettingNotification(hwnd, ctypes.byref(LID), 0)
         wtsapi32.WTSRegisterSessionNotification(hwnd, 0)
         msg = wintypes.MSG()

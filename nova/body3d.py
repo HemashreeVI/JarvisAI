@@ -99,6 +99,10 @@ class Body3D:
         self._lock = threading.Lock()
         self._walk_x = None
         self._hwnd = None
+        self._shapes = 0
+        self._shape_warned = False
+        self._keyed = False
+        self.transparency = settings["buddy"].get("transparency", "shape")
         self.visible = True
         self.window = webview.create_window(
             "Nova", url=str(BODY), js_api=_Bridge(self), width=self.width, height=self.height, x=x, y=y,
@@ -106,7 +110,7 @@ class Body3D:
             background_color="#F4F1F3", shadow=False,
         )
         if IS_WINDOWS:
-            self.window.events.shown += self._prepare_native_window
+            self.window.events.shown += lambda: threading.Thread(target=self._prepare_native_window, daemon=True).start()
 
     # thread-safe public API (same as the 2D Buddy)
     def set_emotion(self, emotion: str, hold: float = 40.0):
@@ -159,6 +163,8 @@ class Body3D:
             pending, self._pending = self._pending, []
         if IS_WINDOWS:
             self._js("nova.enableShaped()")
+            if self.transparency == "colorkey":
+                self._use_color_key()
         for code in pending:
             self._js(code)
         self.on_ready()
@@ -169,21 +175,47 @@ class Body3D:
 
     # Windows: shaped window
     def _find_hwnd(self):
+        """Nova's own window: visible, titled "Nova", owned by this process, created by WinForms."""
         if self._hwnd:
             return self._hwnd
-        try:
-            self._hwnd = int(self.window.native.Handle.ToInt64())
-        except Exception:
-            self._hwnd = ctypes.windll.user32.FindWindowW(None, "Nova") or None
+        import os
+        from ctypes import wintypes
+
+        user32 = ctypes.windll.user32
+        found = []
+
+        @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+        def check(hwnd, _):
+            pid = wintypes.DWORD()
+            user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+            if pid.value != os.getpid() or not user32.IsWindowVisible(hwnd):
+                return True
+            title, cls = ctypes.create_unicode_buffer(64), ctypes.create_unicode_buffer(128)
+            user32.GetWindowTextW(hwnd, title, 64)
+            user32.GetClassNameW(hwnd, cls, 128)
+            if title.value == "Nova" and cls.value.startswith("WindowsForms"):
+                found.append(hwnd)
+            return True
+
+        user32.EnumWindows(check, 0)
+        if found:
+            self._hwnd = found[0]
+            print(f"[nova] window found (hwnd {self._hwnd})")
         return self._hwnd
 
     def _prepare_native_window(self):
         """Hide everything until the first silhouette arrives, and keep Nova off the taskbar."""
-        hwnd = self._find_hwnd()
+        hwnd = None
+        for _ in range(50):  # pywebview shows a transparent window only once the page starts loading
+            hwnd = self._find_hwnd()
+            if hwnd:
+                break
+            time.sleep(0.1)
         if not hwnd:
             return
         user32, gdi32 = ctypes.windll.user32, ctypes.windll.gdi32
-        user32.SetWindowRgn(ctypes.c_void_p(hwnd), ctypes.c_void_p(gdi32.CreateRectRgn(0, 0, 0, 0)), True)
+        if self.transparency == "shape" and self._shapes == 0:
+            user32.SetWindowRgn(ctypes.c_void_p(hwnd), ctypes.c_void_p(gdi32.CreateRectRgn(0, 0, 0, 0)), True)
         GWL_EXSTYLE, WS_EX_TOOLWINDOW, WS_EX_APPWINDOW = -20, 0x00000080, 0x00040000
         get_style = getattr(user32, "GetWindowLongPtrW", user32.GetWindowLongW)
         set_style = getattr(user32, "SetWindowLongPtrW", user32.SetWindowLongW)
@@ -196,7 +228,12 @@ class Body3D:
     def _set_shape(self, rects, dpr: float):
         hwnd = self._find_hwnd()
         if not hwnd:
+            if not self._shape_warned:
+                self._shape_warned = True
+                print("[nova] couldn't find my window to make the background transparent")
             return
+        if self.transparency == "colorkey":
+            return self._use_color_key()
         from ctypes import wintypes
 
         class RGNDATAHEADER(ctypes.Structure):
@@ -223,7 +260,32 @@ class Body3D:
             gdi32.ExtCreateRegion.argtypes = [ctypes.c_void_p, wintypes.DWORD, ctypes.c_void_p]
             rgn = gdi32.ExtCreateRegion(None, ctypes.sizeof(data), ctypes.byref(data))
         user32.SetWindowRgn.argtypes = [ctypes.c_void_p, ctypes.c_void_p, wintypes.BOOL]
-        user32.SetWindowRgn(hwnd, rgn, True)  # Windows owns the region now
+        ok = user32.SetWindowRgn(hwnd, rgn, True)  # Windows owns the region now
+        self._shapes += 1
+        if self._shapes == 1 or not ok:
+            area = sum(w * h for _, _, w, h in rects) / max(1, self.width * self.height)
+            print(f"[nova] shaped window: {len(rects)} pieces, {area:.0%} of the box visible, ok={bool(ok)}")
+
+    def _use_color_key(self):
+        """Backup method: make the window's background colour see-through (settings: transparency = "colorkey")."""
+        if self._keyed:
+            return
+        self._keyed = True
+        try:
+            from System import Action
+            from System.Drawing import Color
+
+            form = self.window.native
+            key = Color.FromArgb(255, 1, 254)
+
+            def apply():
+                form.BackColor = key
+                form.TransparencyKey = key
+
+            form.Invoke(Action(apply))
+            print("[nova] colour-key transparency on")
+        except Exception as e:
+            print(f"[nova] colour-key transparency failed: {e}")
 
     def _follow_cursor(self):
         """Send the mouse position so Nova's eyes follow it anywhere on screen."""

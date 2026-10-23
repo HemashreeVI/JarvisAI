@@ -50,3 +50,4 @@ late_night_hour = 23        # after this hour, gently tell you to sleep
 style = "3d"                # "3d" (real 3D robot) or "2d" (lightweight)
 size = 120                  # robot size: 90 = tiny, 120 = small, 160 = medium
 corner = "bottom-right"     # where Nova sits at startup
+transparency = "shape"      # how the background is removed on Windows: "shape" (default) or "colorkey" (backup)

@@ -122,13 +122,14 @@ function silhouette() {
   return rects;
 }
 
-let shapeClock = 0;
+let shapeClock = 0, resendClock = 0;
 function updateShape(dt) {
   if (!shaped || !bridge()?.set_shape) return;
-  shapeClock += dt;
+  shapeClock += dt; resendClock += dt;
   if (shapeClock < 0.08) return;
   shapeClock = 0;
   const rects = silhouette(), key = JSON.stringify(rects);
+  if (resendClock > 2) { resendClock = 0; lastShape = ''; } // safety net: re-send now and then
   if (key === lastShape) return;
   lastShape = key;
   bridge().set_shape(rects, window.devicePixelRatio || 1);
