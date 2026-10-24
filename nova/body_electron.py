@@ -114,7 +114,28 @@ class BodyElectron:
     def quit(self):
         self._send({"cmd": "quit"}, force=True)
 
+    def _close_leftovers(self):
+        """A previous run that crashed can leave a hidden window process behind, which locks its files."""
+        import psutil
+        target = str(self.exe).lower()
+        stale = []
+        for proc in psutil.process_iter(["exe"]):
+            try:
+                if (proc.info["exe"] or "").lower() == target:
+                    stale.append(proc)
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+        for proc in stale:
+            try:
+                proc.kill()
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+        if stale:
+            psutil.wait_procs(stale, timeout=5)
+            print(f"[nova] closed {len(stale)} leftover window process(es) from an earlier run")
+
     def run(self):
+        self._close_leftovers()
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.bind(("127.0.0.1", 0))
         server.listen(1)

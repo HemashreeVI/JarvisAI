@@ -65,17 +65,19 @@ class NovaApp:
         buddy = self.settings["buddy"]
         if buddy.get("style", "3d") == "3d":
             renderer = buddy.get("renderer", "auto")
-            if renderer in ("auto", "electron"):
+            if renderer == "webview":  # only if asked for: it can't hide its background box on Windows
+                try:
+                    from nova.body3d import Body3D
+                    return Body3D(self.settings)
+                except Exception as e:
+                    print(f"[nova] basic 3D window unavailable: {e}")
+            else:
                 try:
                     from nova.body_electron import BodyElectron
                     return BodyElectron(self.settings)
                 except Exception as e:
-                    print(f"[nova] transparent window unavailable: {e}")
-            try:
-                from nova.body3d import Body3D
-                return Body3D(self.settings)
-            except Exception as e:
-                print(f"[nova] 3D window unavailable ({e}); using the 2D body.")
+                    print(f"[nova] transparent 3D window unavailable: {e}")
+            print("[nova] using the 2D Nova (no background box)")
         from nova.buddy import Buddy
         return Buddy(self.settings)
 
@@ -388,10 +390,10 @@ class NovaApp:
         if self._brain_ok:
             threading.Thread(target=self._warm_up, daemon=True).start()
         self.body.run()
-        if getattr(self.body, "failed", False):  # transparent window couldn't start: use the basic one
-            print("[nova] using the basic window instead")
-            from nova.body3d import Body3D
-            self.body = Body3D(self.settings)
+        if getattr(self.body, "failed", False):  # 3D window couldn't start: the 2D Nova has no box either
+            print("[nova] using the 2D Nova instead (no background box)")
+            from nova.buddy import Buddy
+            self.body = Buddy(self.settings)
             self._wire_body()
             self.body.run()
         import os

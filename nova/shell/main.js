@@ -18,7 +18,8 @@ const send = msg => { if (!link.destroyed) link.write(JSON.stringify(msg) + '\n'
 protocol.registerSchemesAsPrivileged([{ scheme: 'nova', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
 app.commandLine.appendSwitch('ignore-gpu-blocklist');
-if (!app.requestSingleInstanceLock()) app.quit();
+// Nova's own profile folder (cache etc.), so nothing else can lock it
+app.setPath('userData', path.join(__dirname, '..', '..', 'data', 'window-profile'));
 
 let win = null;
 let walkX = null;
