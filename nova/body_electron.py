@@ -61,7 +61,9 @@ class BodyElectron:
     def __init__(self, settings: dict):
         self.exe = ensure_electron()
         size = settings["buddy"]["size"]
-        self.width, self.height = int(size * 2.4), int(size * 2.9)
+        # the window stays big enough for the menu; Nova herself is scaled to `size`
+        self.width, self.height = max(230, int(size * 2.4)), max(300, int(size * 2.9))
+        self.scale = size / 120
         self.corner = settings["buddy"].get("corner", "bottom-right")
 
         self.on_click = lambda: None
@@ -164,7 +166,7 @@ class BodyElectron:
         if event == "ready":
             with self._lock:
                 self._ready = True
-                pending, self._pending = self._pending, []
+                pending, self._pending = [{"js": f"nova.setScale({self.scale})"}] + self._pending, []
             for msg in pending:
                 self._send(msg)
             self.on_ready()

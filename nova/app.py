@@ -135,7 +135,7 @@ class NovaApp:
 
     def hide(self):
         if self.body:
-            self.express("Okay, hiding! Click the tray icon or press Ctrl+Alt+N to bring me back.", "cute")
+            self.express("Okay, hiding! Use the tray icon or press Ctrl+Alt+N to bring me back.", "cute")
             self.body.after(2500, self.body.hide)
 
     def next_voice(self):

@@ -291,6 +291,18 @@ function buildPip() {
 
 const nova = buildNova();
 const pip = buildPip();
+// Nova, Pip and their effects live in one group, so the whole crew can be scaled down together
+// (it shrinks toward the floor, so their feet stay planted).
+const world = new THREE.Group();
+scene.add(world);
+world.add(nova.root, pip.root);
+let crewScale = 1;
+function setScale(s) {
+  crewScale = Math.max(0.3, Math.min(1.5, Number(s) || 1));
+  world.scale.setScalar(crewScale);
+  camera.position.x = CAM_TARGET.x = -0.42 * crewScale;
+  camera.lookAt(CAM_TARGET);
+}
 
 // state
 const S = {
@@ -452,7 +464,7 @@ const particles = [];
 function spawn(kind, pos, { vel = [0, 0.5, 0], life = 1.6, size = 0.22, gravity = 0 } = {}) {
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX[kind], transparent: true, depthWrite: false }));
   sp.position.copy(pos); sp.scale.setScalar(size);
-  scene.add(sp);
+  world.add(sp);
   particles.push({ sp, vel: new THREE.Vector3(...vel), born: now(), life, size, gravity, kind });
 }
 const angerMark = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX.anger, transparent: true, depthWrite: false }));
@@ -462,7 +474,7 @@ let spawnClock = 0;
 function updateParticles(dt, t) {
   spawnClock += dt;
   const e = S.expr, head = new THREE.Vector3();
-  nova.head.getWorldPosition(head);
+  world.worldToLocal(nova.head.getWorldPosition(head));
   if (spawnClock > 0.4) {
     spawnClock = 0;
     const r = Math.random(), rnd = (a, b) => a + Math.random() * (b - a);
@@ -475,7 +487,7 @@ function updateParticles(dt, t) {
   }
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i], k = (now() - p.born) / p.life;
-    if (k >= 1) { scene.remove(p.sp); p.sp.material.dispose(); particles.splice(i, 1); continue; }
+    if (k >= 1) { world.remove(p.sp); p.sp.material.dispose(); particles.splice(i, 1); continue; }
     p.vel.y -= p.gravity * dt;
     p.sp.position.addScaledVector(p.vel, dt);
     p.sp.material.opacity = k < 0.8 ? 1 : (1 - k) / 0.2;
@@ -615,6 +627,7 @@ function frame() {
   animatePip(t, dt);
   updateParticles(dt, t);
   render();
+  placeBubble();
   updateShape(dt);
   requestAnimationFrame(frame);
 }
@@ -624,6 +637,18 @@ const bubble = document.getElementById('bubble');
 const input = document.getElementById('input');
 const menu = document.getElementById('menu');
 let bubbleTimer = null;
+
+const headTop = new THREE.Vector3();
+function placeBubble() {
+  if (!bubble.classList.contains('show')) return;
+  nova.head.localToWorld(headTop.set(0, 1.3, 0)).project(camera);
+  const x = (headTop.x + 1) / 2 * innerWidth, y = (1 - headTop.y) / 2 * innerHeight;
+  const bw = bubble.offsetWidth, bh = bubble.offsetHeight;
+  const left = Math.max(4, Math.min(innerWidth - bw - 4, x - bw / 2));
+  bubble.style.left = left + 'px';
+  bubble.style.top = Math.max(4, y - bh - 10) + 'px';
+  bubble.style.setProperty('--tail', Math.max(12, Math.min(bw - 12, x - left)) + 'px');
+}
 
 function say(text, emotion, seconds) {
   if (emotion) setEmotion(emotion, 40);
@@ -728,9 +753,10 @@ function petPip() {
 }
 
 // public API used by Python (evaluate_js) and by tests
-window.nova = { setEmotion, setActivity, say, perform, pointer, wake: touch, enableShaped, openMenu, state: S, _debug: { nova, pip, cur: () => cur } };
+window.nova = { setEmotion, setActivity, say, perform, pointer, wake: touch, enableShaped, openMenu, setScale, state: S, _debug: { nova, pip, cur: () => cur } };
 if (params.get('bg')) document.body.style.background = params.get('bg');
 if (params.has('shaped')) enableShaped();
+if (params.get('scale')) setScale(params.get('scale'));
 requestAnimationFrame(frame);
 window.addEventListener('pywebviewready', () => bridge()?.ready());
 if (window.pywebview) bridge()?.ready();

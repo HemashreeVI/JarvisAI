@@ -50,6 +50,6 @@ late_night_hour = 23        # after this hour, gently tell you to sleep
 
 [buddy]
 style = "3d"                # "3d" (real 3D robot) or "2d" (lightweight)
-size = 120                  # robot size: 90 = tiny, 120 = small, 160 = medium
+size = 70                   # robot size: 50 = tiny, 70 = small, 100 = medium, 120 = large
 corner = "bottom-right"     # where Nova sits at startup
 renderer = "auto"           # "auto"/"electron": truly transparent window (needs Node.js), "webview": basic window

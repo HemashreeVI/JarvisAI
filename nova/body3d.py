@@ -76,7 +76,9 @@ class _Bridge:
 class Body3D:
     def __init__(self, settings: dict):
         size = settings["buddy"]["size"]
-        self.width, self.height = int(size * 2.4), int(size * 2.9)
+        # the window stays big enough for the menu; Nova herself is scaled to `size`
+        self.width, self.height = max(230, int(size * 2.4)), max(300, int(size * 2.9))
+        self.scale = size / 120
         screen = webview.screens[0] if webview.screens else None
         self.screen_w = screen.width if screen else 1920
         self.screen_h = screen.height if screen else 1080
@@ -161,6 +163,7 @@ class Body3D:
         with self._lock:
             self._ready = True
             pending, self._pending = self._pending, []
+        self._js(f"nova.setScale({self.scale})")
         if IS_WINDOWS:
             self._js("nova.enableShaped()")
             if self.transparency == "colorkey":

@@ -32,7 +32,7 @@ DEFAULTS = {
     "pet": {"name": "Pip"},
     "emotion": {"use_voice_tone": True},
     "companion": {},
-    "buddy": {"style": "3d", "size": 120, "corner": "bottom-right"},
+    "buddy": {"style": "3d", "size": 70, "corner": "bottom-right"},
 }
 
 
