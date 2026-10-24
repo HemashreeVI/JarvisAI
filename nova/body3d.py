@@ -106,6 +106,7 @@ class Body3D:
         self._keyed = False
         self.transparency = settings["buddy"].get("transparency", "shape")
         self.visible = True
+        self._home = (x, y)
         self.window = webview.create_window(
             "Nova", url=str(BODY), js_api=_Bridge(self), width=self.width, height=self.height, x=x, y=y,
             frameless=True, easy_drag=False, on_top=True, transparent=True, resizable=False,
@@ -138,6 +139,10 @@ class Body3D:
     def hide(self):
         self.visible = False
         self.window.hide()
+
+    def home(self):
+        self._walk_x = None
+        self.window.move(*self._home)
 
     def after(self, ms: int, fn):
         threading.Timer(ms / 1000, fn).start()

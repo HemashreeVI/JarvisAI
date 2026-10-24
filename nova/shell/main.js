@@ -47,6 +47,7 @@ function createWindow() {
   win.webContents.on('render-process-gone', (_e, d) => send({ event: 'log', args: [`renderer gone: ${d.reason}`] }));
   win.loadURL('nova://app/index.html');
   win.once('ready-to-show', () => win.showInactive());
+  setInterval(keepOnScreen, 1000);
   win.on('closed', () => { win = null; app.quit(); });
 
   // eyes follow the mouse anywhere on screen
@@ -77,18 +78,36 @@ ipcMain.on('api', (_e, name, args) => {
   send({ event: name, args });
 });
 
-// walking / crawling: slide the window along the bottom of the screen
+// walking / crawling: slide the window along the screen, never past its edges
 ipcMain.handle('nudge', (_e, dx) => {
   if (!win) return { hit_edge: false };
   const { workArea } = screen.getDisplayMatching(win.getBounds());
   const [x, y] = win.getPosition(), w = win.getBounds().width;
-  walkX = (walkX ?? x) + dx;
   const lo = workArea.x, hi = workArea.x + workArea.width - w;
-  const hit = walkX < lo || walkX > hi;
+  walkX = Math.max(lo, Math.min(hi, walkX ?? x)) + dx;
+  const hit = walkX <= lo || walkX >= hi;
   walkX = Math.max(lo, Math.min(hi, walkX));
   if (Math.round(walkX) !== x) win.setPosition(Math.round(walkX), y);
-  return { hit_edge: hit };
+  return { hit_edge: hit, x: walkX, lo, hi };
 });
+
+function cornerPosition() {
+  const { workArea } = screen.getPrimaryDisplay();
+  const { width: W, height: H } = win.getBounds();
+  const corner = opts.corner || 'bottom-right';
+  return [corner.includes('right') ? workArea.x + workArea.width - W - 8 : workArea.x + 8,
+          corner.includes('bottom') ? workArea.y + workArea.height - H : workArea.y + 8];
+}
+
+// safety net: if Nova ever ends up partly off-screen, bring her back
+function keepOnScreen() {
+  if (!win || !win.isVisible()) return;
+  const b = win.getBounds();
+  const { workArea: a } = screen.getDisplayMatching(b);
+  const x = Math.max(a.x, Math.min(a.x + a.width - b.width, b.x));
+  const y = Math.max(a.y, Math.min(a.y + a.height - b.height, b.y));
+  if (x !== b.x || y !== b.y) { win.setPosition(x, y); walkX = null; }
+}
 
 readline.createInterface({ input: link }).on('line', line => {
   let msg;
@@ -98,5 +117,6 @@ readline.createInterface({ input: link }).on('line', line => {
   else if (msg.cmd === 'show') win.showInactive();
   else if (msg.cmd === 'hide') win.hide();
   else if (msg.cmd === 'quit') app.quit();
+  else if (msg.cmd === 'home') { win.setPosition(...cornerPosition()); walkX = null; win.showInactive(); }
 });
 app.on('window-all-closed', () => app.quit());

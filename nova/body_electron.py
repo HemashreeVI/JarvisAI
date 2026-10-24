@@ -108,6 +108,10 @@ class BodyElectron:
         self.visible = False
         self._send({"cmd": "hide"})
 
+    def home(self):
+        """Put Nova back in her corner."""
+        self._send({"cmd": "home"})
+
     def after(self, ms: int, fn):
         threading.Timer(ms / 1000, fn).start()
 

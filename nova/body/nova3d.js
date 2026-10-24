@@ -569,6 +569,14 @@ function animatePip(t, dt) {
   if (mood === 'love' && Math.random() < dt * 1.5) spawn('heart', P.root.position.clone().add(new THREE.Vector3(0, 0.95, 0)), { size: 0.12, vel: [0, 0.35, 0] });
 }
 
+async function faceOpenSpace() {
+  // crawl/walk toward the side of the screen with more room, never into the nearest edge
+  try {
+    const r = await bridge()?.nudge?.(0);
+    if (r && r.hi > r.lo) S.dir = (r.x - r.lo) > (r.hi - r.x) ? -1 : 1;
+  } catch (_) { /* no window bridge (tests) */ }
+}
+
 async function stepMovement(speed, dt) {
   const api = bridge();
   if (!api?.nudge) return;
@@ -586,7 +594,7 @@ function frame() {
   if (!S.action && S.actions.length) {
     const name = S.actions.shift();
     S.action = { name, start: t };
-    if (ACTIONS[name].move && Math.random() < 0.5) S.dir *= -1;
+    if (ACTIONS[name].move) faceOpenSpace();
   }
   const e = exprNow(t);
   if (e !== S.expr) { S.exprSince = t; S.blinkStart = t; if (e === 'surprised' || S.expr === 'sleepy') spawn('bang', new THREE.Vector3(0.8, 3.1, 0.5), { vel: [0, 0.3, 0], life: 1, size: 0.4 }); }
