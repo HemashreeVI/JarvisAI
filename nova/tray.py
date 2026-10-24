@@ -23,6 +23,7 @@ def start_tray(app):
 
     menu = pystray.Menu(
         item("Show / hide Nova", app.toggle_visible, default=True),
+        item("Bring Nova back to her corner", lambda: (app.body_do("show"), app.body_do("home"))),
         item("Talk to Nova", app.listen_now),
         item("Cheer me up", lambda: app.body_do("perform", "cheer")),
         pystray.Menu.SEPARATOR,

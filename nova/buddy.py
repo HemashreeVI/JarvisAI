@@ -99,7 +99,8 @@ class Buddy:
         self.root.configure(bg=self.bg)
         self.cv = tk.Canvas(self.root, width=self.W, height=self.H, bg=self.bg, highlightthickness=0, bd=0)
         self.cv.pack()
-        self._place(settings["buddy"].get("corner", "bottom-right"))
+        self.corner = settings["buddy"].get("corner", "bottom-right")
+        self._place(self.corner)
 
         # callbacks wired up by the app
         self.on_click = lambda: None
@@ -153,6 +154,9 @@ class Buddy:
     def perform(self, action: str):
         # the 2D body can't spin or crawl, so it just gets excited
         self.set_emotion("excited", 6)
+
+    def home(self):
+        self._q.put(lambda: self._place(self.corner))
 
     def after(self, ms: int, fn):
         self._q.put(lambda: self.root.after(ms, fn))

@@ -22,6 +22,8 @@ class Listener:
         self.wake_words = sorted((w.lower() for w in self.cfg["wake_words"]), key=len, reverse=True)
         self.sensitivity = float(self.cfg.get("mic_sensitivity", 1.0))
         self.noise_floor = 0.004
+        self.last_peak = 0.0       # loudest sound in the last recording (for troubleshooting)
+        self.last_threshold = 0.0
         self.paused = threading.Event()      # set while Nova is speaking, so she doesn't hear herself
         self._manual = threading.Event()     # "listen now" (click / hotkey)
         self.wake_word_allowed = lambda: True  # False during quiet mode
@@ -35,13 +37,17 @@ class Listener:
         with sd.InputStream(samplerate=SAMPLE_RATE, channels=1, blocksize=BLOCK, dtype="float32",
                             callback=lambda data, *_: q.put(data.copy())):
             chunks, started, silent_for, start = [], False, 0.0, time.time()
+            self.last_peak = 0.0
             pre_roll: list = []
             while True:
                 block = q.get()[:, 0]
                 level = float(np.sqrt(np.mean(block ** 2))) * self.sensitivity
                 if not started:
                     self.noise_floor = 0.95 * self.noise_floor + 0.05 * min(level, 0.05)
-                is_speech = level > max(self.noise_floor * 3.0, 0.008)
+                threshold = max(self.noise_floor * 2.5, 0.006)
+                is_speech = level > threshold
+                self.last_peak = max(self.last_peak, level)
+                self.last_threshold = threshold
                 if self.paused.is_set():
                     return None
                 if not started:
@@ -58,6 +64,24 @@ class Listener:
                 if silent_for > SILENCE_TO_STOP or len(chunks) * BLOCK / SAMPLE_RATE > MAX_UTTERANCE:
                     audio = np.concatenate(chunks)
                     return audio if len(audio) > SAMPLE_RATE * 0.35 else None
+
+    def diagnosis(self) -> str:
+        """Why nothing was heard, in plain words."""
+        peak, need = self.last_peak, self.last_threshold
+        if peak < 0.001:
+            return (" - the microphone sent silence. Check Windows Settings > Privacy & security > Microphone "
+                    "(allow desktop apps) and that the right mic is the default input.")
+        if peak < need:
+            return f" - it was too quiet (loudest {peak:.3f}, needed {need:.3f}). Speak closer, or raise mic_sensitivity in settings.toml."
+        return " - I heard sound but no clear words. Try again a little slower."
+
+    @staticmethod
+    def mic_name() -> str:
+        try:
+            import sounddevice as sd
+            return sd.query_devices(kind="input")["name"]
+        except Exception:
+            return "unknown"
 
     def transcribe(self, audio: np.ndarray) -> str:
         segments, _ = self.model.transcribe(audio, language="en", beam_size=1, vad_filter=True)
@@ -90,12 +114,14 @@ class Listener:
             if self._manual.is_set():
                 self._manual.clear()
                 on_state("listening")
-                audio = self._record_utterance(wait_for_speech=6.0)
+                audio = self._record_utterance(wait_for_speech=7.0)
                 on_state("idle")
-                if audio is not None:
-                    text = self.transcribe(audio)
-                    if text:
-                        on_command(text, audio)
+                text = self.transcribe(audio) if audio is not None else ""
+                if text:
+                    on_state(f"heard:{text}")
+                    on_command(text, audio)
+                else:
+                    on_state("missed")
                 continue
             if not self.cfg.get("wake_word", True) or not self.wake_word_allowed():
                 time.sleep(0.1)
