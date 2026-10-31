@@ -8,22 +8,27 @@
   html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; user-select: none;
     font-family: "Segoe UI", system-ui, sans-serif; }
   #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
-  #bubble { position: fixed; left: 50%; top: 10px; transform: translate(-36%, 6px) scale(.96); max-width: 74%;
-    background: #fff; color: #1b1e2a; border: 2px solid var(--accent, #5ef0ff); border-radius: 16px;
-    padding: 9px 13px; font-size: 14px; line-height: 1.35; box-shadow: 0 6px 18px rgba(0,0,0,.18);
-    opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; }
-  #bubble.show { opacity: 1; transform: translate(-36%, 0) scale(1); }
-  #bubble::after { content: ""; position: absolute; left: 46%; bottom: -10px; width: 16px; height: 16px; background: #fff;
+  #bubble { position: fixed; left: 8px; top: 6px; max-width: 86%; width: max-content;
+    background: #fff; color: #1b1e2a; border: 2px solid var(--accent, #5ef0ff); border-radius: 13px;
+    padding: 6px 10px; font-size: 12px; line-height: 1.32; box-shadow: 0 3px 10px rgba(0,0,0,.18);
+    opacity: 0; transition: opacity .2s; pointer-events: none; }
+  #bubble.show { opacity: 1; }
+  #bubble::after { content: ""; position: absolute; left: calc(var(--tail, 50%) - 7px); bottom: -8px; width: 12px; height: 12px; background: #fff;
     border-right: 2px solid var(--accent, #5ef0ff); border-bottom: 2px solid var(--accent, #5ef0ff); transform: rotate(45deg); }
-  #input { position: fixed; left: 8%; right: 8%; bottom: 10px; display: none; padding: 10px 14px; border-radius: 22px;
-    border: 2px solid #5ef0ff; background: #0e111d; color: #e8fbff; font-size: 14px; outline: none; }
+  #input { position: fixed; left: 6%; right: 6%; bottom: 8px; display: none; padding: 8px 12px; border-radius: 18px;
+    border: 2px solid #5ef0ff; background: #0e111d; color: #e8fbff; font-size: 13px; outline: none; }
   #input.show { display: block; }
-  #menu { position: fixed; display: none; min-width: 160px; background: #11141f; border: 1px solid #2a3042; border-radius: 12px;
-    padding: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+  #menu { position: fixed; display: none; width: 178px; background: #11141f; border: 1px solid #2a3042; border-radius: 12px;
+    padding: 5px; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
   #menu.show { display: block; }
-  #menu div { padding: 7px 12px; color: #e6f6ff; font-size: 13px; border-radius: 8px; cursor: pointer; }
-  #menu div:hover { background: #1e2536; }
-  #menu hr { border: 0; border-top: 1px solid #2a3042; margin: 5px 4px; }
+  #menu > div { padding: 4px 9px; color: #e6f6ff; font-size: 12px; border-radius: 7px; cursor: pointer; }
+  #menu > div:hover, #menu .moves span:hover { background: #1e2536; }
+  #menu .moves { display: flex; justify-content: space-between; padding: 2px 4px; cursor: default; }
+  #menu .moves span { font-size: 15px; padding: 2px 5px; border-radius: 7px; cursor: pointer; }
+  #menu .off { color: #ff8a8a; }
+  #menu hr { border: 0; border-top: 1px solid #2a3042; margin: 4px; }
+  /* shaped window: every pixel must be solid (no soft shadows, no fades) */
+  body.shaped #bubble, body.shaped #menu { box-shadow: none; transition: none; }
 </style>
 </head>
 <body>
@@ -31,18 +36,18 @@
   <div id="bubble"></div>
   <input id="input" placeholder="Talk to Nova..." autocomplete="off">
   <div id="menu">
-    <div data-act="talk">🎙️ Talk to Nova</div>
-    <div data-act="type">⌨️ Type a message</div>
-    <div data-act="pet">🐾 Pet the kitty</div>
-    <hr>
-    <div data-act="spin">🌀 Spin</div>
-    <div data-act="dance">💃 Dance</div>
-    <div data-act="crawl">🐛 Crawl</div>
-    <div data-act="walk">🚶 Walk around</div>
+    <div data-act="talk">🎙️ Talk to me</div>
+    <div data-act="type">⌨️ Type to me</div>
+    <div class="moves">
+      <span data-act="spin" title="Spin">🌀</span><span data-act="dance" title="Dance">💃</span><span data-act="crawl" title="Crawl">🐛</span><span data-act="walk" title="Walk">🚶</span><span data-act="hug" title="Hug">🤗</span>
+    </div>
     <div data-act="cheer">🌈 Cheer me up</div>
     <hr>
+    <div data-act="voice">🎤 Change my voice</div>
     <div data-act="mute">🔇 Mute / unmute</div>
-    <div data-act="quit">❌ Quit</div>
+    <div data-act="quiet">🤫 Quiet for 1 hour</div>
+    <div data-act="hide">🙈 Hide me for now</div>
+    <div data-act="quit" class="off">⏻ Turn off Nova</div>
   </div>
   <script type="module" src="./nova3d.js"></script>
 </body>

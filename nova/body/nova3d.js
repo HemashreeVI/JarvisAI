@@ -12,7 +12,7 @@ const bridge = () => window.pywebview?.api;
 
 // renderer / scene
 const canvas = document.getElementById('scene');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: params.has('test') });
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setClearColor(0x000000, 0);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -48,11 +48,105 @@ floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
 scene.add(floor);
 
+// Shaped-window mode (Windows): Python cuts the window to Nova's silhouette, so every pixel
+// must be either fully opaque or fully transparent. We render to a texture, snap the alpha,
+// and send the silhouette as rectangles a few times per second.
+let shaped = false, rt = null, maskRT = null, outScene = null, maskScene = null, maskBuf = null, lastShape = '';
+const quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+const QUAD_VS = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
+
+function enableShaped() {
+  if (shaped) return;
+  shaped = true;
+  document.body.classList.add('shaped');
+  rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 });
+  maskRT = new THREE.WebGLRenderTarget(1, 1);
+  const quad = mat => { const sc = new THREE.Scene(); sc.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat)); return sc; };
+  outScene = quad(new THREE.ShaderMaterial({
+    uniforms: { tDiffuse: { value: rt.texture } }, vertexShader: QUAD_VS, depthTest: false, depthWrite: false,
+    fragmentShader: `uniform sampler2D tDiffuse; varying vec2 vUv;
+      void main() {
+        vec4 c = texture2D(tDiffuse, vUv);
+        if (c.a < 0.5) { gl_FragColor = vec4(0.0); return; }
+        gl_FragColor = vec4(c.rgb / c.a, 1.0);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`,
+  }));
+  maskScene = quad(new THREE.ShaderMaterial({
+    uniforms: { tDiffuse: { value: rt.texture } }, vertexShader: QUAD_VS, depthTest: false, depthWrite: false, toneMapped: false,
+    fragmentShader: `uniform sampler2D tDiffuse; varying vec2 vUv;
+      void main() { gl_FragColor = vec4(texture2D(tDiffuse, vUv).a >= 0.5 ? 1.0 : 0.0, 0.0, 0.0, 1.0); }`,
+  }));
+  resize();
+}
+
+function render() {
+  if (!shaped) { renderer.render(scene, camera); return; }
+  renderer.setRenderTarget(rt);
+  renderer.render(scene, camera);
+  renderer.setRenderTarget(null);
+  renderer.render(outScene, quadCam);
+}
+
+function silhouette() {
+  // rows of opaque pixels, merged vertically into rectangles [x, y, w, h] in CSS px
+  const w = maskRT.width, h = maskRT.height;
+  renderer.setRenderTarget(maskRT);
+  renderer.render(maskScene, quadCam);
+  renderer.setRenderTarget(null);
+  renderer.readRenderTargetPixels(maskRT, 0, 0, w, h, maskBuf);
+  const rects = [];
+  let open = [], prevKey = '';
+  for (let y = 0; y < h; y++) {
+    const row = (h - 1 - y) * w * 4, spans = [];
+    for (let x = 0; x < w; x++) {
+      if (maskBuf[row + x * 4] > 127) {
+        const x0 = x;
+        while (x < w && maskBuf[row + x * 4] > 127) x++;
+        spans.push([x0, x - x0]);
+      }
+    }
+    const key = spans.join(';');
+    if (key === prevKey) { open.forEach(r => r[3]++); continue; }
+    rects.push(...open);
+    open = spans.map(([x0, len]) => [x0, y, len, 1]);
+    prevKey = key;
+  }
+  rects.push(...open);
+  for (const [el, extra] of [[bubble, 14], [menu, 2], [input, 2]]) { // UI on top of Nova
+    if (!el.classList.contains('show')) continue;
+    const r = el.getBoundingClientRect();
+    rects.push([Math.floor(r.left) - 1, Math.floor(r.top) - 1, Math.ceil(r.width) + 2, Math.ceil(r.height) + extra]);
+  }
+  return rects;
+}
+
+let shapeClock = 0, resendClock = 0;
+function updateShape(dt) {
+  if (!shaped || !bridge()?.set_shape) return;
+  shapeClock += dt; resendClock += dt;
+  if (shapeClock < 0.08) return;
+  shapeClock = 0;
+  const rects = silhouette(), key = JSON.stringify(rects);
+  if (resendClock > 2) { resendClock = 0; lastShape = ''; } // safety net: re-send now and then
+  if (key === lastShape) return;
+  lastShape = key;
+  bridge().set_shape(rects, window.devicePixelRatio || 1);
+}
+
 function resize() {
   const w = window.innerWidth, h = window.innerHeight;
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
+  if (shaped) {
+    const size = renderer.getDrawingBufferSize(new THREE.Vector2());
+    rt.setSize(size.x, size.y);
+    maskRT.setSize(w, h);
+    maskBuf = new Uint8Array(w * h * 4);
+    lastShape = '';
+  }
 }
 window.addEventListener('resize', resize);
 resize();
@@ -197,6 +291,18 @@ function buildPip() {
 
 const nova = buildNova();
 const pip = buildPip();
+// Nova, Pip and their effects live in one group, so the whole crew can be scaled down together
+// (it shrinks toward the floor, so their feet stay planted).
+const world = new THREE.Group();
+scene.add(world);
+world.add(nova.root, pip.root);
+let crewScale = 1;
+function setScale(s) {
+  crewScale = Math.max(0.3, Math.min(1.5, Number(s) || 1));
+  world.scale.setScalar(crewScale);
+  camera.position.x = CAM_TARGET.x = -0.42 * crewScale;
+  camera.lookAt(CAM_TARGET);
+}
 
 // state
 const S = {
@@ -358,7 +464,7 @@ const particles = [];
 function spawn(kind, pos, { vel = [0, 0.5, 0], life = 1.6, size = 0.22, gravity = 0 } = {}) {
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX[kind], transparent: true, depthWrite: false }));
   sp.position.copy(pos); sp.scale.setScalar(size);
-  scene.add(sp);
+  world.add(sp);
   particles.push({ sp, vel: new THREE.Vector3(...vel), born: now(), life, size, gravity, kind });
 }
 const angerMark = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX.anger, transparent: true, depthWrite: false }));
@@ -368,7 +474,7 @@ let spawnClock = 0;
 function updateParticles(dt, t) {
   spawnClock += dt;
   const e = S.expr, head = new THREE.Vector3();
-  nova.head.getWorldPosition(head);
+  world.worldToLocal(nova.head.getWorldPosition(head));
   if (spawnClock > 0.4) {
     spawnClock = 0;
     const r = Math.random(), rnd = (a, b) => a + Math.random() * (b - a);
@@ -381,7 +487,7 @@ function updateParticles(dt, t) {
   }
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i], k = (now() - p.born) / p.life;
-    if (k >= 1) { scene.remove(p.sp); p.sp.material.dispose(); particles.splice(i, 1); continue; }
+    if (k >= 1) { world.remove(p.sp); p.sp.material.dispose(); particles.splice(i, 1); continue; }
     p.vel.y -= p.gravity * dt;
     p.sp.position.addScaledVector(p.vel, dt);
     p.sp.material.opacity = k < 0.8 ? 1 : (1 - k) / 0.2;
@@ -463,6 +569,14 @@ function animatePip(t, dt) {
   if (mood === 'love' && Math.random() < dt * 1.5) spawn('heart', P.root.position.clone().add(new THREE.Vector3(0, 0.95, 0)), { size: 0.12, vel: [0, 0.35, 0] });
 }
 
+async function faceOpenSpace() {
+  // crawl/walk toward the side of the screen with more room, never into the nearest edge
+  try {
+    const r = await bridge()?.nudge?.(0);
+    if (r && r.hi > r.lo) S.dir = (r.x - r.lo) > (r.hi - r.x) ? -1 : 1;
+  } catch (_) { /* no window bridge (tests) */ }
+}
+
 async function stepMovement(speed, dt) {
   const api = bridge();
   if (!api?.nudge) return;
@@ -480,7 +594,7 @@ function frame() {
   if (!S.action && S.actions.length) {
     const name = S.actions.shift();
     S.action = { name, start: t };
-    if (ACTIONS[name].move && Math.random() < 0.5) S.dir *= -1;
+    if (ACTIONS[name].move) faceOpenSpace();
   }
   const e = exprNow(t);
   if (e !== S.expr) { S.exprSince = t; S.blinkStart = t; if (e === 'surprised' || S.expr === 'sleepy') spawn('bang', new THREE.Vector3(0.8, 3.1, 0.5), { vel: [0, 0.3, 0], life: 1, size: 0.4 }); }
@@ -520,7 +634,9 @@ function frame() {
 
   animatePip(t, dt);
   updateParticles(dt, t);
-  renderer.render(scene, camera);
+  render();
+  placeBubble();
+  updateShape(dt);
   requestAnimationFrame(frame);
 }
 
@@ -529,6 +645,18 @@ const bubble = document.getElementById('bubble');
 const input = document.getElementById('input');
 const menu = document.getElementById('menu');
 let bubbleTimer = null;
+
+const headTop = new THREE.Vector3();
+function placeBubble() {
+  if (!bubble.classList.contains('show')) return;
+  nova.head.localToWorld(headTop.set(0, 1.3, 0)).project(camera);
+  const x = (headTop.x + 1) / 2 * innerWidth, y = (1 - headTop.y) / 2 * innerHeight;
+  const bw = bubble.offsetWidth, bh = bubble.offsetHeight;
+  const left = Math.max(4, Math.min(innerWidth - bw - 4, x - bw / 2));
+  bubble.style.left = left + 'px';
+  bubble.style.top = Math.max(4, y - bh - 10) + 'px';
+  bubble.style.setProperty('--tail', Math.max(12, Math.min(bw - 12, x - left)) + 'px');
+}
 
 function say(text, emotion, seconds) {
   if (emotion) setEmotion(emotion, 40);
@@ -554,8 +682,24 @@ function hitTest(ev) {
 
 let press = null, clickTimer = null;
 canvas.addEventListener('mousedown', ev => { if (ev.button === 0) press = { x: ev.screenX, y: ev.screenY, lx: ev.screenX, ly: ev.screenY, moved: false }; });
+// Electron: the window ignores the mouse (clicks reach your desktop) except over Nova, Pip or the menu
+const ELECTRON = !!window.pywebview?.electron;
+let catching = false, menuTimer = null;
+function overSomething(ev) {
+  if (press) return true;
+  if (menu.classList.contains('show') && menu.contains(ev.target)) return true;
+  if (input.classList.contains('show') && ev.target === input) return true;
+  return !!hitTest(ev);
+}
+function setCatching(on) {
+  if (!ELECTRON || on === catching) return;
+  catching = on;
+  bridge()?.set_ignore(!on);
+}
+
 window.addEventListener('mousemove', ev => {
   if (!bridge()) pointer((ev.clientX / innerWidth - 0.6) * 2, (ev.clientY / innerHeight - 0.45) * 2);
+  setCatching(overSomething(ev));
   if (!press) return;
   const dx = ev.screenX - press.lx, dy = ev.screenY - press.ly;
   if (Math.abs(ev.screenX - press.x) + Math.abs(ev.screenY - press.y) > 5) press.moved = true;
@@ -564,26 +708,46 @@ window.addEventListener('mousemove', ev => {
 window.addEventListener('mouseup', ev => {
   if (!press || ev.button !== 0) return;
   const moved = press.moved; press = null;
-  if (moved) return;
+  if (moved || menu.contains(ev.target)) return;
   const who = hitTest(ev);
   if (who === 'pip') return petPip();
-  if (who === 'nova') { clearTimeout(clickTimer); clickTimer = setTimeout(() => { touch(); bridge()?.clicked(); }, 260); }
+  if (who === 'nova') {
+    clearTimeout(clickTimer);
+    const x = ev.clientX, y = ev.clientY;
+    clickTimer = setTimeout(() => { touch(); openMenu(x, y); }, 230);
+  } else closeMenu();
 });
-canvas.addEventListener('dblclick', ev => { clearTimeout(clickTimer); if (hitTest(ev)) openInput(); });
-window.addEventListener('contextmenu', ev => { ev.preventDefault(); menu.style.left = Math.min(ev.clientX, innerWidth - 170) + 'px'; menu.style.top = Math.min(ev.clientY, innerHeight - 220) + 'px'; menu.classList.add('show'); });
-window.addEventListener('click', ev => { if (!menu.contains(ev.target)) menu.classList.remove('show'); });
+canvas.addEventListener('dblclick', ev => { clearTimeout(clickTimer); if (hitTest(ev)) { closeMenu(); openInput(); } });
+window.addEventListener('contextmenu', ev => { ev.preventDefault(); openMenu(ev.clientX, ev.clientY); });
+window.addEventListener('blur', closeMenu); // clicked somewhere else on the desktop
+
+function openMenu(x, y) {
+  clearTimeout(menuTimer);
+  menuTimer = setTimeout(closeMenu, 10000); // clicking the desktop can't reach us, so close by itself
+  menu.classList.add('show');
+  const mw = menu.offsetWidth, mh = menu.offsetHeight;
+  menu.style.left = Math.max(4, Math.min(x - mw / 2, innerWidth - mw - 4)) + 'px';
+  menu.style.top = Math.max(4, Math.min(y - mh / 2, innerHeight - mh - 4)) + 'px';
+}
+function closeMenu() { menu.classList.remove('show'); }
+
 menu.addEventListener('click', ev => {
-  const act = ev.target.dataset.act; if (!act) return;
-  menu.classList.remove('show');
-  if (act === 'talk') bridge()?.clicked();
+  const act = ev.target.closest('[data-act]')?.dataset.act;
+  if (!act) return;
+  closeMenu();
+  const api = bridge();
+  if (act === 'talk') api?.clicked();
   else if (act === 'type') openInput();
   else if (act === 'pet') petPip();
-  else if (act === 'mute') bridge()?.toggle_mute();
-  else if (act === 'quit') bridge()?.quit();
+  else if (act === 'voice') api?.next_voice();
+  else if (act === 'mute') api?.toggle_mute();
+  else if (act === 'quiet') api?.quiet(60);
+  else if (act === 'hide') api?.hide();
+  else if (act === 'quit') api?.quit();
   else perform(act);
 });
 
-function openInput() { touch(); input.classList.add('show'); input.focus(); }
+function openInput() { touch(); input.classList.add('show'); bridge()?.focus?.(); setTimeout(() => input.focus(), 50); setCatching(true); }
 input.addEventListener('keydown', ev => {
   if (ev.key === 'Escape') { input.value = ''; input.classList.remove('show'); }
   if (ev.key === 'Enter') { const text = input.value.trim(); input.value = ''; input.classList.remove('show'); if (text) bridge()?.text(text); }
@@ -597,8 +761,10 @@ function petPip() {
 }
 
 // public API used by Python (evaluate_js) and by tests
-window.nova = { setEmotion, setActivity, say, perform, pointer, wake: touch, state: S, _debug: { nova, pip, cur: () => cur } };
+window.nova = { setEmotion, setActivity, say, perform, pointer, wake: touch, enableShaped, openMenu, setScale, state: S, _debug: { nova, pip, cur: () => cur } };
 if (params.get('bg')) document.body.style.background = params.get('bg');
+if (params.has('shaped')) enableShaped();
+if (params.get('scale')) setScale(params.get('scale'));
 requestAnimationFrame(frame);
 window.addEventListener('pywebviewready', () => bridge()?.ready());
 if (window.pywebview) bridge()?.ready();
