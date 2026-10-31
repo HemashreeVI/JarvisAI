@@ -137,6 +137,8 @@ ROUTES = {
     "cancel_reminder": ["cancel", "reminder", "alarm"],
     "remember": ["remember", "my name", "my birthday", "i like", "i love", "favourite", "favorite", "note that"],
     "forget": ["forget"],
+    "search_memories": ["remember", "recall", "do you know", "what do you know", "did i tell", "when is my",
+                        "when's my", "what's my", "what is my", "exam", "deadline", "due", "upcoming"],
     "add_note": ["note", "write down", "jot"],
     "read_notes": ["notes"],
     "find_file": ["file", "folder", "document", "pdf", "find my"],

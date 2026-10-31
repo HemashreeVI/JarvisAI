@@ -25,7 +25,7 @@
   - a gentle "go to sleep" late at night
   - a playful nudge after too long on YouTube
   - "what did I do today?" answered with a time-per-app summary
-- **🧠 Remembers.** Facts about you, your conversations, a mood diary and your daily activity. All of it is stored in `data/` on your PC.
+- **🧠 Really remembers.** Tell her *"my DBMS exam is on Friday"* and she saves it with the real date, reminds you when you open your laptop, and brings it up when it matters. She finds memories by meaning ("my database test" finds "DBMS exam"), lets unimportant ones fade like real memories, and keeps important, pinned and upcoming ones strong. Plus your conversations, a mood diary and your daily activity. All of it is stored in `data/` on your PC.
 - **🛠️ Does the work.** Open and close any app · Google, YouTube, websites · weather · news · Wikipedia · reminders and alarms · notes · find files · volume and media · screenshots · battery/CPU · lock, sleep, shutdown (asks first) · WhatsApp and Gmail (optional, asks first)
 - **🔒 Private brain.** Thinking happens on your PC with [Ollama](https://ollama.com). No API keys.
 - **⏻ Turn her off anytime.** Use the tray icon or her right-click menu for **Quiet mode** (no check-ins, no wake word), **Hide**, or **Turn off**. Or just say *"Nova, be quiet for an hour."*
@@ -52,6 +52,11 @@ flowchart LR
    ollama pull qwen2.5:7b
    ```
    On a low-end laptop, use `qwen2.5:3b` and change `model` in `settings.toml`.
+   For Nova's smart memory search (small, about 270 MB), also run:
+   ```bash
+   ollama pull nomic-embed-text
+   ```
+   Without it, Nova still remembers and searches by keywords.
 2. **Install Node.js** (LTS) from https://nodejs.org. Nova uses it for her see-through window. The first start sets it up automatically (about a minute).
 3. **Install Nova** (Python 3.11 to 3.14. Not 3.15 yet: many packages don't support it):
    ```bash
@@ -93,6 +98,8 @@ Try:
 - *"I'm so stressed about my exam"*
 - *"you're the cutest"*
 - *"remember my birthday is March 3rd"*
+- *"my DBMS exam is next Friday"*, then later *"when is my exam?"*
+- *"what's coming up this week?"*
 - *"what did I do today?"*
 - *"be quiet for an hour"*
 
@@ -118,6 +125,31 @@ def flip_coin() -> str:
 
 Use `@tool(..., dangerous=True)` for anything risky. Nova will then ask before running it.
 
+## How Nova's memory works
+
+```mermaid
+flowchart LR
+    You[💬 You say something] --> Capture{Worth keeping?<br/>statements yes,<br/>questions no}
+    Capture -->|yes| Save[(data/mind.db<br/>text · kind · date<br/>importance · meaning)]
+    You --> Search[Find related memories<br/>meaning + keywords]
+    Save --> Search
+    Search --> Brain[🧠 Brain gets the few<br/>that matter right now]
+    Save --> Fade[Fading: unused,<br/>unimportant memories<br/>get archived]
+```
+
+- **What's saved:** facts (*"I study CSE at VIT"*), likes (*"I love dosa"*), goals (*"I want to learn ML"*), and deadlines with real dates (*"CSE2004 assignment due tomorrow"* is saved with the actual date, so "tomorrow" never goes stale). Course codes become tags.
+- **What's skipped:** questions, commands and small talk.
+- **Repeats** strengthen a memory instead of creating a copy.
+- **Fading:** each memory has a strength from its importance, how often it comes up, and how long since it was last used. Pinned memories and upcoming dates stay strong; passed dates fade within about a week. Faded memories are archived, never silently deleted.
+- **Settings:** the `[memory]` section in `settings.toml`.
+
+## Running the tests
+
+```bash
+pip install pytest
+python -m pytest tests
+```
+
 ## Project structure
 
 ```
@@ -136,9 +168,11 @@ nova/
   body3d.py          fallback 3D window (pywebview)
   body/              three.js: Nova's 3D body, eyes (eyes.js) and Pip
   buddy.py           lightweight 2D body (fallback)
-  memory.py          long-term memory and mood diary
+  memory.py          chat history, simple facts and mood diary
+  mind/              long-term memory engine: search by meaning, fading, deadlines (data/mind.db)
   tray.py            tray icon (hide / quiet / turn off)
   skills/            everything Nova can do
+tests/               automated tests (python -m pytest tests)
 data/                private stuff (git-ignored)
 ```
 

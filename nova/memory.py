@@ -9,8 +9,10 @@ MAX_MOODS = 300
 
 
 class Memory:
-    def __init__(self, data_dir: Path, user_name: str = "friend"):
+    def __init__(self, data_dir: Path, user_name: str = "friend", mind=None):
+        """mind: an optional nova.mind.MemoryEngine for long-term, searchable memories."""
         self.path = Path(data_dir) / "memory.json"
+        self.mind = mind
         self._lock = threading.Lock()
         self.data = {"user_name": user_name, "facts": {}, "history": [], "moods": []}
         if self.path.exists():
@@ -19,6 +21,8 @@ class Memory:
             except (json.JSONDecodeError, OSError):
                 pass  # corrupted file: start fresh rather than crash
         self.data["user_name"] = user_name or self.data["user_name"]
+        if self.mind is not None and self.data["facts"]:
+            self.mind.import_facts(self.data["facts"])
 
     def save(self):
         with self._lock:
@@ -34,6 +38,8 @@ class Memory:
     def remember(self, key: str, value: str):
         self.data["facts"][key.strip().lower()] = value.strip()
         self.save()
+        if self.mind is not None:
+            self.mind.add(f"{key.strip()}: {value.strip()}", "fact", 7, key=key, source="told")
 
     def recall(self, key: str):
         return self.data["facts"].get(key.strip().lower())
@@ -41,6 +47,8 @@ class Memory:
     def forget(self, key: str) -> bool:
         removed = self.data["facts"].pop(key.strip().lower(), None) is not None
         self.save()
+        if self.mind is not None:
+            removed = self.mind.archive_key(key) or removed
         return removed
 
     @property

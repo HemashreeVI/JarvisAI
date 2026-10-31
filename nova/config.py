@@ -29,6 +29,7 @@ DEFAULTS = {
         "mic_sensitivity": 1.0,
         "hotkey": "<ctrl>+<alt>+n",
     },
+    "memory": {"embed_model": "nomic-embed-text", "auto_capture": True, "recall": 4, "fade_days": 30},
     "pet": {"name": "Pip"},
     "emotion": {"use_voice_tone": True},
     "companion": {},

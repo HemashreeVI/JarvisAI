@@ -18,9 +18,31 @@ def remember(key: str, value: str) -> str:
     return f"I'll remember that your {key} is {value}."
 
 
-@tool("Forget a remembered fact.", key="The label of the fact")
+@tool("Forget a remembered fact or memory.", key="The label of the fact, or a few words from the memory")
 def forget(key: str) -> str:
-    return f"Forgotten {key}." if ctx.memory.forget(key) else f"I had nothing saved for {key}."
+    if ctx.memory.forget(key):
+        return f"Forgotten {key}."
+    mind = getattr(ctx.memory, "mind", None)
+    if mind is not None:
+        hits = mind.search(key, limit=1, min_score=0.5, touch=False)
+        if hits and mind.archive(hits[0].id):
+            return f"Forgotten: {hits[0].text}."
+    return f"I had nothing saved for {key}."
+
+
+@tool("Search what you remember about the user: past things they told you, exams, deadlines, plans, likes. "
+      "Use an empty query with upcoming=true for what's coming up.",
+      query="What to look for, e.g. 'DBMS exam' or 'favourite food'",
+      upcoming="true to list dated things coming up in the next 2 weeks")
+def search_memories(query: str = "", upcoming: bool = False) -> str:
+    mind = getattr(ctx.memory, "mind", None)
+    if mind is None:
+        facts = ctx.memory.facts
+        return "; ".join(f"{k}: {v}" for k, v in facts.items()) or "I don't remember anything yet."
+    items = mind.upcoming(14) if upcoming or not query.strip() else mind.search(query, limit=5)
+    if not items:
+        return "Nothing coming up that I know of." if upcoming else f"I don't remember anything about {query}."
+    return "I remember: " + "; ".join(m.describe() for m in items)
 
 
 @tool("Write down a note.", text="The note")

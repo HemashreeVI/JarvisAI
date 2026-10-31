@@ -32,6 +32,14 @@ tts_voice = "Zira"          # system voice: part of a voice name installed on yo
 mic_sensitivity = 1.0       # raise to 1.5-2.0 if Nova doesn't hear you
 hotkey = "<ctrl>+<alt>+n"   # press anywhere to talk to Nova
 
+[memory]
+# Nova's long-term memory lives in data/mind.db on your PC.
+embed_model = "nomic-embed-text"   # finds memories by meaning. Install once:  ollama pull nomic-embed-text
+                                   # ("" = keyword search only, no extra download)
+auto_capture = true         # remember things you mention, like "my DBMS exam is on Friday"
+recall = 4                  # how many related memories Nova keeps in mind per message
+fade_days = 30              # unimportant memories fade after about this long unless they come up again
+
 [emotion]
 use_voice_tone = true       # read your mood from how you sound, not just what you say
 llm_mood = false            # true = extra AI call to read your mood (more accurate, but slower replies)
