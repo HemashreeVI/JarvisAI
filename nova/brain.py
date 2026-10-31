@@ -38,6 +38,8 @@ Doing tasks:
 - Never invent tool results. If a tool fails, say so simply and suggest what to try.
 - If a tool says CONFIRMATION NEEDED, ask {name} to confirm in one short sentence and wait.
 - When {name} tells you a personal fact worth keeping (birthday, likes, people in their life), use `remember`.
+- The (context: ...) note may list things you remember. Bring them up naturally when they help (an exam
+  coming up, something they told you before). If {name} asks what you remember, use `search_memories`.
 - You have a real 3D body! Use `perform` to spin, dance, jump, wave, hug, walk or crawl when asked - and on your
   own to cheer {name} up when they're sad or stressed (the "cheer" routine), or to celebrate good news.
 - You're their emotional support: listen, be kind, ask gentle questions, celebrate small wins.
@@ -85,13 +87,43 @@ class Brain:
             emotions=", ".join(NOVA_EMOTIONS[:-1]), facts=facts,
         )
 
-    def _context_note(self, mood: EmotionReading) -> str:
+    def _context_note(self, mood: EmotionReading, user_text: str = "") -> str:
         parts = [datetime.now().strftime("%A %d %B %Y, %I:%M %p"),
                  f"{self.memory.user_name} seems {mood.describe()} - {mood.guidance}"]
         activity = self.context_fn()
         if activity:
             parts.append(activity)
+        remembered = self._recall(user_text)
+        if remembered:
+            parts.append(f"you remember: {remembered}")
         return "(context: " + " | ".join(parts) + ")"
+
+    def _recall(self, user_text: str) -> str:
+        """Memories that matter for this message. They ride along with the message, not in the system
+        prompt, so Ollama's prompt cache keeps working."""
+        mind = getattr(self.memory, "mind", None)
+        if mind is None or not user_text:
+            return ""
+        try:
+            return mind.context_for(user_text, limit=int(self.settings.get("memory", {}).get("recall", 4)))
+        except Exception as e:  # memory trouble must never stop Nova from answering
+            print("[memory]", e)
+            return ""
+
+    def _capture(self, user_text: str):
+        """Save anything worth remembering from what they said, in the background."""
+        mind = getattr(self.memory, "mind", None)
+        if mind is None or not self.settings.get("memory", {}).get("auto_capture", True):
+            return
+
+        def run():
+            try:
+                for item in mind.capture(user_text):
+                    print(f"[memory] saved ({item.kind}): {item.describe()}")
+            except Exception as e:
+                print("[memory]", e)
+
+        threading.Thread(target=run, daemon=True, name="memory-capture").start()
 
     def warm_up(self):
         """Load the model into memory now, so the first real reply isn't slow."""
@@ -117,7 +149,7 @@ class Brain:
             self.memory.log_mood(mood.emotion, mood.intensity)
 
         messages = [{"role": "system", "content": self._system_prompt()}, *history,
-                    {"role": "user", "content": f"{self._context_note(mood)}\n{user_text}"}]
+                    {"role": "user", "content": f"{self._context_note(mood, user_text)}\n{user_text}"}]
         used, raw = [], ""
         speech = _SentenceStream(mood.nova_emotion, on_sentence)
         offered = tools.route(user_text, self.last_tools)
@@ -157,6 +189,7 @@ class Brain:
             speech.emit_extra(text)
         self.memory.add_message("user", user_text)
         self.memory.add_message("assistant", text)
+        self._capture(user_text)
         return Reply(text, speech.emotion or emotion, mood, used)
 
     def generate(self, situation: str, timeout: float = 10.0) -> str | None:

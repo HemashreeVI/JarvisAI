@@ -24,7 +24,7 @@ class NovaApp:
     def __init__(self, settings: dict, gui: bool = True):
         self.settings = settings
         self.pet = settings.get("pet", {}).get("name", "Pip")
-        self.memory = Memory(DATA_DIR, settings["user"]["name"])
+        self.memory = Memory(DATA_DIR, settings["user"]["name"], mind=self._make_mind(settings))
         tools.ctx.settings, tools.ctx.memory, tools.ctx.notify, tools.ctx.app = settings, self.memory, self.notify, self
         tools.load_skills()
         self.brain = Brain(settings, self.memory)
@@ -49,6 +49,21 @@ class NovaApp:
             self.companion = Companion(self, settings)
             self.brain.context_fn = self.companion.describe_now
         threading.Thread(target=self._worker, daemon=True, name="brain").start()
+
+    @staticmethod
+    def _make_mind(settings: dict):
+        """Long-term memory (data/mind.db). Nova still works with simple facts if it can't open."""
+        cfg = settings.get("memory", {})
+        try:
+            from nova.mind import MemoryEngine, OllamaEmbedder
+            embedder = OllamaEmbedder(settings["brain"]["host"], cfg.get("embed_model", "nomic-embed-text"))
+            mind = MemoryEngine(DATA_DIR / "mind.db", embedder, fade_days=float(cfg.get("fade_days", 30)))
+            faded = mind.sweep()
+            print(f"[memory] {mind.count()} memories" + (f" ({faded} faded away)" if faded else ""))
+            return mind
+        except Exception as e:
+            print("[memory] long-term memory unavailable:", e)
+            return None
 
     def _wire_body(self):
         self.body.on_click = self.listen_now

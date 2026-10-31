@@ -122,6 +122,11 @@ class Companion:
                 context.append(f"Last time they seemed {last['emotion']}.")
             if facts:
                 context.append("Things you know: " + "; ".join(f"{k}: {v}" for k, v in list(facts.items())[:8]))
+            mind = getattr(self.app.memory, "mind", None)
+            if mind is not None:
+                soon = mind.upcoming(3)
+                if soon:
+                    context.append("Coming up: " + "; ".join(m.describe() for m in soon[:3]) + ".")
             text = self.app.brain.generate(
                 f"{self.name} just opened the laptop. " + " ".join(context) +
                 " Welcome them back like an excited little robot friend who missed them: 1-2 short sentences. "
