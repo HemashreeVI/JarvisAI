@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 570" width="1200" height="570" role="img" aria-labelledby="feat-t feat-d">
+<title id="feat-t">Nova features</title>
+<desc id="feat-d">Real 3D, on top: Lit, glossy robot in a see-through window above every app. She spins, dances and waves.; Eyes tell everything: A glowing visor with eyes for every mood: happy, hearts, angry, sleepy.; Pip the robo-kitty: Hops when you're happy, hides when Nova is angry, loves head pats.; Feels with you: Reads your mood from your words and your voice tone, then cheers you up.; A real voice: Neural voice that sounds excited, soft or sleepy, with an offline backup.; Opens with you: Welcomes you when the lid opens, waves goodbye when it closes.; Watches over work: Break reminders, check-ins, a late-night nudge, a daily app summary.; Really remembers: Saves plans with real dates, finds memories by meaning, lets small ones fade.; Private brain: Thinks on your PC with Ollama. Everything stays in data/.</desc>
+<style>
+.serif{font-family:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,'Times New Roman',serif}.sans{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace}
+.twinkle{animation:tw 4s ease-in-out infinite}@keyframes tw{0%,100%{opacity:.15}50%{opacity:.9}}
+.pulse{animation:pl 2.4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes pl{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:1;transform:scale(1.35)}}
+.spin{animation:sp 60s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+.spinr{animation:sr 40s linear infinite}@keyframes sr{to{transform:rotate(-360deg)}}
+.float{animation:fl 6s ease-in-out infinite}@keyframes fl{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.fadein{animation:fi 1.2s ease-out both}@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+</style>
+<defs>
+<radialGradient id="feat-bg" cx="70%" cy="30%" r="90%"><stop offset="0" stop-color="#10224A"/><stop offset=".55" stop-color="#0A1428"/><stop offset="1" stop-color="#050A16"/></radialGradient>
+<radialGradient id="feat-glowA" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#1F4FD1" stop-opacity=".5"/><stop offset="1" stop-color="#1F4FD1" stop-opacity="0"/></radialGradient>
+<radialGradient id="feat-glowB" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#5BE0FF" stop-opacity=".14"/><stop offset="1" stop-color="#5BE0FF" stop-opacity="0"/></radialGradient>
+<linearGradient id="feat-metal" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".45" stop-color="#B8F1FF"/><stop offset="1" stop-color="#5BE0FF"/></linearGradient>
+<linearGradient id="feat-rule" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5BE0FF" stop-opacity="0"/><stop offset=".25" stop-color="#5BE0FF" stop-opacity=".85"/><stop offset="1" stop-color="#5BE0FF" stop-opacity="0"/></linearGradient>
+<pattern id="feat-grid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" fill="none" stroke="#5BE0FF" stroke-opacity=".05"/></pattern>
+</defs>
+<rect x="1" y="1" width="1198" height="568" rx="22" fill="url(#feat-bg)" stroke="#1B2C55"/>
+<rect x="1" y="1" width="1198" height="568" rx="22" fill="url(#feat-grid)"/>
+<ellipse cx="240" cy="171" rx="420" ry="399" fill="url(#feat-glowA)"/>
+<ellipse cx="960" cy="399" rx="300" ry="285" fill="url(#feat-glowB)"/><rect x="40" y="40" width="360" height="150" rx="16" fill="#0D1A36" stroke="#28407A"/>
+<circle cx="74" cy="76" r="17" fill="#050A16" stroke="#5BE0FF"/>
+<text x="74" y="82" class="sans" font-size="16" fill="#B8F1FF" text-anchor="middle" >◆</text>
+<text x="102" y="82" class="serif" font-size="19" fill="#EEF4FF" text-anchor="start" >Real 3D, on top</text>
+<text x="62" y="122" class="sans" font-size="13" fill="#C7D3EE" text-anchor="start" >Lit, glossy robot in a see-through window</text><text x="62" y="142" class="sans" font-size="13" fill="#8C9BC0" text-anchor="start" >above every app. She spins, dances and waves.</text>
+<rect x="62" y="176" width="34" height="2" rx="1" fill="#5BE0FF"><animate attributeName="width" values="34;316;34" dur="6s" repeatCount="indefinite"/></rect><rect x="420" y="40" width="360" height="150" rx="16" fill="#0D1A36" stroke="#28407A"/>
+<circle cx="454" cy="76" r="17" fill="#050A16" stroke="#5BE0FF"/>
+<text x="454" y="82" class="sans" font-size="16" fill="#B8F1FF" text-anchor="middle" >◉</text>
+<text x="482" y="82" class="serif" font-size="19" fill="#EEF4FF" text-anchor="start" >Eyes tell everything</text>
+<text x="442" y="122" class="sans" font-size="13" fill="#C7D3EE" text-anchor="start" >A glowing visor with eyes for every mood:</text><text x="442" y="142" class="sans" font-size="13" fill="#8C9BC0" text-anchor="start" >happy, hearts, angry, sleepy.</text>
+<rect x="442" y="176" width="34" height="2" rx="1" fill="#5BE0FF"><animate attributeName="width" values="34;316;34" dur="7s" repeatCount="indefinite"/></rect><rect x="800" y="40" width="360" height="150" rx="16" fill="#0D1A36" stroke="#28407A"/>
+<circle cx="834" cy="76" r="17" fill="#050A16" stroke="#5BE0FF"/>
+<text x="834" y="82" class="sans" font-size="16" fill="#B8F1FF" text-anchor="middle" >♥</text>
+<text x="862" y="82" class="serif" font-size="19" fill="#EEF4FF" text-anchor="start" >Pip the robo-kitty</text>
+<text x="822" y="122" class="sans" font-size="13" fill="#C7D3EE" text-anchor="start" >Hops when you're happy, hides when Nova is</text><text x="822" y="142" class="sans" font-size="13" fill="#8C9BC0" text-anchor="start" >angry, loves head pats.</text>
+<rect x="822" y="176" width="34" height="2" rx="1" fill="#5BE0FF"><animate attributeName="width" values="34;316;34" dur="8s" repeatCount="indefinite"/></rect><rect x="40" y="210" width="360" height="150" rx="16" fill="#0D1A36" stroke="#28407A"/>
+<circle cx="74" cy="246" r="17" fill="#050A16" stroke="#5BE0FF"/>
+<text x="74" y="252" class="sans" font-size="16" fill="#B8F1FF" text-anchor="middle" >≈</text>
+<text x="102" y="252" class="serif" font-size="19" fill="#EEF4FF" text-anchor="start" >Feels with you</text>
+<text x="62" y="292" class="sans" font-size="13" fill="#C7D3EE" text-anchor="start" >Reads your mood from your words and your voice</text><text x="62" y="312" class="sans" font-size="13" fill="#8C9BC0" text-anchor="start" >tone, then cheers you up.</text>
+<rect x="62" y="346" width="34" height="2" rx="1" fill="#5BE0FF"><animate attributeName="width" values="34;316;34" dur="9s" repeatCount="indefinite"/></rect><rect x="420" y="210" width="360" height="150" rx="16" fill="#0D1A36" stroke="#28407A"/>
+<circle cx="454" cy="246" r="17" fill="#050A16" stroke="#5BE0FF"/>
+<text x="454" y="252" class="sans" font-size="16" fill="#B8F1FF" text-anchor="middle" >♪</text>
+<text x="482" y="252" class="serif" font-size="19" fill="#EEF4FF" text-anchor="start" >A real voice</text>
+<text x="442" y="292" class="sans" font-size="13" fill="#C7D3EE" text-anchor="start" >Neural voice that sounds excited, soft or</text><text x="442" y="312" class="sans" font-size="13" fill="#8C9BC0" text-anchor="start" >sleepy, with an offline backup.</text>
+<rect x="442" y="346" width="34" height="2" rx="1" fill="#5BE0FF"><animate attributeName="width" values="34;316;34" dur="6s" repeatCount="indefinite"/></rect><rect x="800" y="210" width="360" height="150" rx="16" fill="#0D1A36" stroke="#28407A"/>
+<circle cx="834" cy="246" r="17" fill="#050A16" stroke="#5BE0FF"/>
+<text x="834" y="252" class="sans" font-size="16" fill="#B8F1FF" text-anchor="middle" >◐</text>
+<text x="862" y="252" class="serif" font-size="19" fill="#EEF4FF" text-anchor="start" >Opens with you</text>
+<text x="822" y="292" class="sans" font-size="13" fill="#C7D3EE" text-anchor="start" >Welcomes you when the lid opens, waves goodbye</text><text x="822" y="312" class="sans" font-size="13" fill="#8C9BC0" text-anchor="start" >when it closes.</text>
+<rect x="822" y="346" width="34" height="2" rx="1" fill="#5BE0FF"><animate attributeName="width" values="34;316;34" dur="7s" repeatCount="indefinite"/></rect><rect x="40" y="380" width="360" height="150" rx="16" fill="#0D1A36" stroke="#28407A"/>
+<circle cx="74" cy="416" r="17" fill="#050A16" stroke="#5BE0FF"/>
+<text x="74" y="422" class="sans" font-size="16" fill="#B8F1FF" text-anchor="middle" >◷</text>
+<text x="102" y="422" class="serif" font-size="19" fill="#EEF4FF" text-anchor="start" >Watches over work</text>
+<text x="62" y="462" class="sans" font-size="13" fill="#C7D3EE" text-anchor="start" >Break reminders, check-ins, a late-night</text><text x="62" y="482" class="sans" font-size="13" fill="#8C9BC0" text-anchor="start" >nudge, a daily app summary.</text>
+<rect x="62" y="516" width="34" height="2" rx="1" fill="#5BE0FF"><animate attributeName="width" values="34;316;34" dur="8s" repeatCount="indefinite"/></rect><rect x="420" y="380" width="360" height="150" rx="16" fill="#0D1A36" stroke="#28407A"/>
+<circle cx="454" cy="416" r="17" fill="#050A16" stroke="#5BE0FF"/>
+<text x="454" y="422" class="sans" font-size="16" fill="#B8F1FF" text-anchor="middle" >✦</text>
+<text x="482" y="422" class="serif" font-size="19" fill="#EEF4FF" text-anchor="start" >Really remembers</text>
+<text x="442" y="462" class="sans" font-size="13" fill="#C7D3EE" text-anchor="start" >Saves plans with real dates, finds memories by</text><text x="442" y="482" class="sans" font-size="13" fill="#8C9BC0" text-anchor="start" >meaning, lets small ones fade.</text>
+<rect x="442" y="516" width="34" height="2" rx="1" fill="#5BE0FF"><animate attributeName="width" values="34;316;34" dur="9s" repeatCount="indefinite"/></rect><rect x="800" y="380" width="360" height="150" rx="16" fill="#0D1A36" stroke="#28407A"/>
+<circle cx="834" cy="416" r="17" fill="#050A16" stroke="#5BE0FF"/>
+<text x="834" y="422" class="sans" font-size="16" fill="#B8F1FF" text-anchor="middle" >⚿</text>
+<text x="862" y="422" class="serif" font-size="19" fill="#EEF4FF" text-anchor="start" >Private brain</text>
+<text x="822" y="462" class="sans" font-size="13" fill="#C7D3EE" text-anchor="start" >Thinks on your PC with Ollama. Everything</text><text x="822" y="482" class="sans" font-size="13" fill="#8C9BC0" text-anchor="start" >stays in data/.</text>
+<rect x="822" y="516" width="34" height="2" rx="1" fill="#5BE0FF"><animate attributeName="width" values="34;316;34" dur="6s" repeatCount="indefinite"/></rect>
+</svg>

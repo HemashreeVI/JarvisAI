@@ -1,49 +1,24 @@
-<div align="center">
+<p align="center">
+  <img src="./assets/readme/hero.svg" width="100%" alt="Nova: A tiny 3D robot who lives on your screen, does your work, and feels with you.">
+</p>
 
-# ✦ Nova ✦
-**A tiny 3D robot who lives on top of your screen, does your work, and feels with you.**
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-5BE0FF?style=for-the-badge" alt="Python"> <img src="https://img.shields.io/badge/Ollama-5BE0FF?style=for-the-badge" alt="Ollama"> <img src="https://img.shields.io/badge/Whisper-5BE0FF?style=for-the-badge" alt="Whisper"> <img src="https://img.shields.io/badge/three.js-5BE0FF?style=for-the-badge" alt="three.js"> <img src="https://img.shields.io/badge/Electron-5BE0FF?style=for-the-badge" alt="Electron"> <img src="https://img.shields.io/badge/Neural_TTS-5BE0FF?style=for-the-badge" alt="Neural TTS">
+</p>
 
-<img src="assets/expressions.png" width="92%" alt="Nova and Pip in every mood"/>
+<img src="./assets/readme/title-features.svg" width="100%" alt="01 Features: What it does.">
+<img src="./assets/readme/features.svg" width="100%" alt="Nova features">
 
-*Nova and her robo-kitty Pip: real-time 3D, always on top of your desktop.*
+<img src="./assets/readme/title-flow.svg" width="100%" alt="02 How She Works: Listen, feel, act.">
+<img src="./assets/readme/flow.svg" width="100%" alt="Hear → Feel → Think → Act → Show → Speak">
 
-</div>
+<img src="./assets/readme/title-table.svg" width="100%" alt="03 Talk To Her: Say it, click it.">
+<img src="./assets/readme/table.svg" width="100%" alt="Talk To Her">
 
----
+<img src="./assets/readme/title-stack.svg" width="100%" alt="04 Tech stack: The tools behind it.">
+<img src="./assets/readme/stack.svg" width="100%" alt="Nova tech stack">
 
-## What Nova does
-
-- **🤖 Real 3D, on top of everything.** A glossy little robot rendered live in 3D (lighting, reflections, shadows) in a transparent window that floats above all your apps. Drag her anywhere. Her eyes follow your mouse. She **spins, dances, jumps, waves, hugs, walks and crawls** across your screen.
-- **👀 Eyes tell everything.** Her visor is a glowing screen. Each mood has its own eyes: `^ ^` happy, sparkly pink cute eyes, beating hearts, **red narrowed angry eyes** with a 💢, droopy sad eyes with a tear, wide surprised rings, sleepy lids...
-- **🐱 Has a pet.** **Pip** the robo-kitty hops when you're happy, hides trembling `> <` when Nova is angry, snuggles closer when you're sad, sleeps when Nova sleeps, and follows her when she walks. Click Pip for head pats 💕
-- **💗 Feels with you.** She reads your mood from your words **and your voice tone** (loudness, pitch and speed, compared to how *you* normally sound). When you're sad or stressed she softens her voice, comforts you, and does a **cheer-up routine**: wave, spin, dance, crawl over to you, hug. Good news gets a happy spin.
-- **🗣️ Talks with a real voice.** A natural neural voice (cute `en-US-AnaNeural` by default) that sounds excited, soft or sleepy to match her mood. If there's no internet, an offline voice takes over. Say **"Hey Nova"** anytime.
-- **💻 Opens and closes with you.** Open the lid, unlock or wake the laptop and she's **excited to see you** with a new welcome every time. She remembers your plans ("Your DBMS exam is Friday, ready?"). Close the lid or lock it and she waves **goodbye**.
-- **🧑‍💻 Watches over you while you work.** She notices which app you're in and for how long:
-  - after 50 minutes non-stop, a break reminder
-  - every 90 minutes, a caring check-in question (she then listens for your answer, no wake word needed)
-  - a gentle "go to sleep" late at night
-  - a playful nudge after too long on YouTube
-  - "what did I do today?" answered with a time-per-app summary
-- **🧠 Really remembers.** Tell her *"my DBMS exam is on Friday"* and she saves it with the real date, reminds you when you open your laptop, and brings it up when it matters. She finds memories by meaning ("my database test" finds "DBMS exam"), lets unimportant ones fade like real memories, and keeps important, pinned and upcoming ones strong. Plus your conversations, a mood diary and your daily activity. All of it is stored in `data/` on your PC.
-- **🛠️ Does the work.** Open and close any app · Google, YouTube, websites · weather · news · Wikipedia · reminders and alarms · notes · find files · volume and media · screenshots · battery/CPU · lock, sleep, shutdown (asks first) · WhatsApp and Gmail (optional, asks first)
-- **🔒 Private brain.** Thinking happens on your PC with [Ollama](https://ollama.com). No API keys.
-- **⏻ Turn her off anytime.** Use the tray icon or her right-click menu for **Quiet mode** (no check-ins, no wake word), **Hide**, or **Turn off**. Or just say *"Nova, be quiet for an hour."*
-
-## How it works
-
-```mermaid
-flowchart LR
-    Mic[🎙️ Mic] --> STT[Whisper<br/>speech-to-text]
-    STT --> Mood{Your mood}
-    Mic --> Tone[Voice tone] --> Mood
-    PC[💻 Lid / lock / active app] --> Companion[Companion<br/>welcome · check-ins · breaks]
-    Mood --> Brain[🧠 Local LLM<br/>personality + memory]
-    Companion --> Brain
-    Brain <--> Skills[🧩 Skills]
-    Brain --> Body[🤖 3D body + eyes + Pip<br/>three.js]
-    Brain --> Voice[🔊 Neural voice<br/>styled by mood]
-```
+<img src="./assets/readme/title-run.svg" width="100%" alt="05 Run it: Try it yourself.">
 
 ## Setup (Windows 10/11)
 
@@ -78,30 +53,6 @@ flowchart LR
    ```
    The first run downloads the speech-recognition model (~150 MB).
 
-## Talking to Nova
-
-| Do this | And Nova... |
-|---|---|
-| Say **"Hey Nova, ..."** | wakes up and does it |
-| **Click** Nova, or press **Ctrl+Alt+N** | listens right away |
-| **Double-click** Nova | opens a box to type in |
-| **Click Pip** | Pip gets head pats |
-| **Right-click** | menu: talk, type, spin, dance, crawl, walk, cheer me up, mute, quit |
-| **Drag** | moves her |
-| **Tray icon** | show/hide, quiet for 1 hour, turn off |
-
-Try:
-- *"Hey Nova, open Spotify"*
-- *"what's the weather?"*
-- *"remind me to call amma at 7 pm"*
-- *"do a dance!"*
-- *"I'm so stressed about my exam"*
-- *"you're the cutest"*
-- *"remember my birthday is March 3rd"*
-- *"my DBMS exam is next Friday"*, then later *"when is my exam?"*
-- *"what's coming up this week?"*
-- *"what did I do today?"*
-- *"be quiet for an hour"*
 
 ## Optional: WhatsApp and Gmail
 
@@ -109,6 +60,7 @@ Try:
 - **Gmail:** run `pip install google-api-python-client google-auth-oauthlib`. Create an OAuth client (Desktop app) in Google Cloud Console with the Gmail API enabled, and save it as `data/credentials.json`.
 
 Everything in `data/` (memory, mood diary, activity log, contacts, tokens) stays private and is git-ignored.
+
 
 ## Teach Nova a new skill
 
@@ -124,6 +76,7 @@ def flip_coin() -> str:
 ```
 
 Use `@tool(..., dangerous=True)` for anything risky. Nova will then ask before running it.
+
 
 ## How Nova's memory works
 
@@ -143,12 +96,14 @@ flowchart LR
 - **Fading:** each memory has a strength from its importance, how often it comes up, and how long since it was last used. Pinned memories and upcoming dates stay strong; passed dates fade within about a week. Faded memories are archived, never silently deleted.
 - **Settings:** the `[memory]` section in `settings.toml`.
 
+
 ## Running the tests
 
 ```bash
 pip install pytest
 python -m pytest tests
 ```
+
 
 ## Project structure
 
@@ -181,3 +136,7 @@ data/                private stuff (git-ignored)
 💙 Built by [Hemashree VI](https://github.com/HemashreeVI)
 
 </div>
+
+<p align="center">
+  <img src="./assets/readme/footer.svg" width="100%" alt="Thinking happens on your PC. Nothing leaves it. Built by Hemashree.">
+</p>

@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" width="1200" height="440" role="img" aria-labelledby="hero-t hero-d">
+<title id="hero-t">Nova: Jarvisai · Your 3D Desktop Companion</title>
+<desc id="hero-d">A tiny 3D robot who lives on your screen, does your work, and feels with you. Built with Python, Ollama, Whisper, three.js, Electron, Neural TTS. 100% local brain, no API keys; Hey Nova wake word, any time; 1 file teaches her a new skill</desc>
+<style>
+.serif{font-family:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,'Times New Roman',serif}.sans{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace}
+.twinkle{animation:tw 4s ease-in-out infinite}@keyframes tw{0%,100%{opacity:.15}50%{opacity:.9}}
+.pulse{animation:pl 2.4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes pl{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:1;transform:scale(1.35)}}
+.spin{animation:sp 60s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+.spinr{animation:sr 40s linear infinite}@keyframes sr{to{transform:rotate(-360deg)}}
+.float{animation:fl 6s ease-in-out infinite}@keyframes fl{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.fadein{animation:fi 1.2s ease-out both}@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+</style>
+<defs>
+<radialGradient id="hero-bg" cx="70%" cy="30%" r="90%"><stop offset="0" stop-color="#10224A"/><stop offset=".55" stop-color="#0A1428"/><stop offset="1" stop-color="#050A16"/></radialGradient>
+<radialGradient id="hero-glowA" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#1F4FD1" stop-opacity=".5"/><stop offset="1" stop-color="#1F4FD1" stop-opacity="0"/></radialGradient>
+<radialGradient id="hero-glowB" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#5BE0FF" stop-opacity=".14"/><stop offset="1" stop-color="#5BE0FF" stop-opacity="0"/></radialGradient>
+<linearGradient id="hero-metal" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".45" stop-color="#B8F1FF"/><stop offset="1" stop-color="#5BE0FF"/></linearGradient>
+<linearGradient id="hero-rule" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5BE0FF" stop-opacity="0"/><stop offset=".25" stop-color="#5BE0FF" stop-opacity=".85"/><stop offset="1" stop-color="#5BE0FF" stop-opacity="0"/></linearGradient>
+<pattern id="hero-grid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" fill="none" stroke="#5BE0FF" stroke-opacity=".05"/></pattern>
+</defs>
+<rect x="1" y="1" width="1198" height="438" rx="22" fill="url(#hero-bg)" stroke="#1B2C55"/>
+<rect x="1" y="1" width="1198" height="438" rx="22" fill="url(#hero-grid)"/>
+<ellipse cx="936" cy="176" rx="420" ry="308" fill="url(#hero-glowA)"/>
+<ellipse cx="264" cy="264" rx="300" ry="220" fill="url(#hero-glowB)"/>
+<defs><linearGradient id="hero-sheen" gradientUnits="userSpaceOnUse" x1="-300" y1="0" x2="-60" y2="0">
+<stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".85"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+<animateTransform attributeName="gradientTransform" type="translate" values="0 0;1100 0;1100 0" keyTimes="0;.45;1" dur="7s" repeatCount="indefinite"/>
+</linearGradient></defs>
+<circle class="twinkle" cx="151" cy="72" r="1" fill="#EEF4FF" style="animation-delay:0.9s"/><circle class="twinkle" cx="760" cy="325" r="1" fill="#EEF4FF" style="animation-delay:0.9s"/><circle class="twinkle" cx="474" cy="357" r="1" fill="#EEF4FF" style="animation-delay:2.4s"/><circle class="twinkle" cx="253" cy="183" r="0.8" fill="#EEF4FF" style="animation-delay:0.4s"/><circle class="twinkle" cx="1162" cy="146" r="1" fill="#EEF4FF" style="animation-delay:0.7s"/><circle class="twinkle" cx="1102" cy="228" r="1.2" fill="#EEF4FF" style="animation-delay:2.4s"/><circle class="twinkle" cx="1084" cy="200" r="1" fill="#EEF4FF" style="animation-delay:0.1s"/><circle class="twinkle" cx="914" cy="273" r="1.2" fill="#EEF4FF" style="animation-delay:0.3s"/><circle class="twinkle" cx="639" cy="385" r="0.8" fill="#EEF4FF" style="animation-delay:2.3s"/><circle class="twinkle" cx="1048" cy="101" r="0.8" fill="#EEF4FF" style="animation-delay:0.1s"/><circle class="twinkle" cx="906" cy="343" r="1.2" fill="#EEF4FF" style="animation-delay:0.6s"/><circle class="twinkle" cx="945" cy="355" r="1.6" fill="#EEF4FF" style="animation-delay:3.5s"/><circle class="twinkle" cx="788" cy="90" r="1" fill="#EEF4FF" style="animation-delay:1.2s"/><circle class="twinkle" cx="701" cy="320" r="1.6" fill="#EEF4FF" style="animation-delay:3.8s"/><circle class="twinkle" cx="278" cy="45" r="1.2" fill="#EEF4FF" style="animation-delay:1.4s"/><circle class="twinkle" cx="824" cy="378" r="0.8" fill="#EEF4FF" style="animation-delay:2.0s"/><circle class="twinkle" cx="1018" cy="311" r="1" fill="#EEF4FF" style="animation-delay:2.2s"/><circle class="twinkle" cx="540" cy="191" r="1.6" fill="#EEF4FF" style="animation-delay:1.0s"/><circle class="twinkle" cx="1024" cy="138" r="1" fill="#EEF4FF" style="animation-delay:0.9s"/><circle class="twinkle" cx="59" cy="194" r="1.2" fill="#EEF4FF" style="animation-delay:1.8s"/><circle class="twinkle" cx="982" cy="289" r="0.8" fill="#EEF4FF" style="animation-delay:2.6s"/><circle class="twinkle" cx="548" cy="290" r="0.8" fill="#EEF4FF" style="animation-delay:0.9s"/><circle class="twinkle" cx="248" cy="61" r="1" fill="#EEF4FF" style="animation-delay:0.5s"/><circle class="twinkle" cx="768" cy="368" r="1.6" fill="#EEF4FF" style="animation-delay:0.3s"/><circle class="twinkle" cx="902" cy="98" r="0.8" fill="#EEF4FF" style="animation-delay:1.8s"/><circle class="twinkle" cx="391" cy="222" r="1.6" fill="#EEF4FF" style="animation-delay:1.6s"/><circle class="twinkle" cx="484" cy="299" r="1.2" fill="#EEF4FF" style="animation-delay:1.0s"/><circle class="twinkle" cx="636" cy="250" r="1.2" fill="#EEF4FF" style="animation-delay:2.1s"/><circle class="twinkle" cx="996" cy="376" r="0.8" fill="#EEF4FF" style="animation-delay:2.6s"/><circle class="twinkle" cx="480" cy="177" r="1.6" fill="#EEF4FF" style="animation-delay:3.8s"/><circle class="twinkle" cx="178" cy="316" r="1.6" fill="#EEF4FF" style="animation-delay:1.0s"/><circle class="twinkle" cx="92" cy="142" r="1" fill="#EEF4FF" style="animation-delay:0.1s"/><circle class="twinkle" cx="890" cy="267" r="1.6" fill="#EEF4FF" style="animation-delay:4.0s"/><circle class="twinkle" cx="558" cy="117" r="0.8" fill="#EEF4FF" style="animation-delay:3.5s"/><circle class="twinkle" cx="494" cy="43" r="1.2" fill="#EEF4FF" style="animation-delay:1.9s"/><circle class="twinkle" cx="417" cy="177" r="1" fill="#EEF4FF" style="animation-delay:3.1s"/><circle class="twinkle" cx="1143" cy="329" r="1.2" fill="#EEF4FF" style="animation-delay:2.8s"/><circle class="twinkle" cx="903" cy="97" r="1.2" fill="#EEF4FF" style="animation-delay:4.0s"/><circle class="twinkle" cx="154" cy="169" r="0.8" fill="#EEF4FF" style="animation-delay:2.4s"/><circle class="twinkle" cx="680" cy="238" r="1.6" fill="#EEF4FF" style="animation-delay:1.6s"/>
+<line x1="60" y1="64" x2="92" y2="64" stroke="#5BE0FF"/>
+<text x="104" y="68" class="mono" font-size="12" fill="#5BE0FF" text-anchor="start" letter-spacing="3">JARVISAI · YOUR 3D DESKTOP COMPANION</text>
+<g class="fadein">
+<text x="56" y="160" class="serif" font-size="92" fill="url(#hero-metal)" text-anchor="start" letter-spacing="4">Nova</text>
+<text x="56" y="160" class="serif" font-size="92" fill="url(#hero-sheen)" text-anchor="start" letter-spacing="4" opacity=".55">Nova</text>
+</g>
+<rect x="60" y="186" width="560" height="1.5" fill="url(#hero-rule)"/>
+<circle cx="60" cy="187" r="3" fill="#fff"><animate attributeName="cx" values="60;620;60" dur="9s" repeatCount="indefinite"/>
+<animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.1;.9;1" dur="9s" repeatCount="indefinite"/></circle>
+<text x="60" y="236" class="serif" font-size="22" fill="#B8F1FF" text-anchor="start" font-style="italic">A tiny 3D robot who lives on your screen, does your</text><text x="60" y="266" class="serif" font-size="22" fill="#B8F1FF" text-anchor="start" font-style="italic">work, and feels with you.</text>
+<rect x="60" y="318" width="62" height="24" rx="12" fill="#0D1A36" stroke="#28407A"/><text x="71" y="334" class="mono" font-size="11" fill="#C7D3EE" text-anchor="start" >Python</text><rect x="130" y="318" width="62" height="24" rx="12" fill="#0D1A36" stroke="#28407A"/><text x="141" y="334" class="mono" font-size="11" fill="#C7D3EE" text-anchor="start" >Ollama</text><rect x="201" y="318" width="69" height="24" rx="12" fill="#0D1A36" stroke="#28407A"/><text x="212" y="334" class="mono" font-size="11" fill="#C7D3EE" text-anchor="start" >Whisper</text><rect x="277" y="318" width="76" height="24" rx="12" fill="#0D1A36" stroke="#28407A"/><text x="288" y="334" class="mono" font-size="11" fill="#C7D3EE" text-anchor="start" >three.js</text><rect x="361" y="318" width="76" height="24" rx="12" fill="#0D1A36" stroke="#28407A"/><text x="372" y="334" class="mono" font-size="11" fill="#C7D3EE" text-anchor="start" >Electron</text><rect x="445" y="318" width="89" height="24" rx="12" fill="#0D1A36" stroke="#28407A"/><text x="456" y="334" class="mono" font-size="11" fill="#C7D3EE" text-anchor="start" >Neural TTS</text>
+<line x1="60" y1="362" x2="720" y2="362" stroke="#1B2C55"/>
+<text x="60" y="392" class="serif" font-size="26" fill="#EEF4FF" text-anchor="start" >100%</text><text x="60" y="414" class="sans" font-size="12" fill="#8C9BC0" text-anchor="start" >local brain, no API keys</text><text x="290" y="392" class="serif" font-size="26" fill="#EEF4FF" text-anchor="start" >Hey Nova</text><text x="290" y="414" class="sans" font-size="12" fill="#8C9BC0" text-anchor="start" >wake word, any time</text><text x="520" y="392" class="serif" font-size="26" fill="#EEF4FF" text-anchor="start" >1 file</text><text x="520" y="414" class="sans" font-size="12" fill="#8C9BC0" text-anchor="start" >teaches her a new skill</text>
+<ellipse cx="930" cy="200" rx="250" ry="210" fill="url(#hero-glowA)"/>
+<circle cx="930" cy="200" r="168" fill="none" stroke="#5BE0FF" stroke-opacity=".2"/>
+<g class="spin" style="transform-origin:930px 200px">
+<circle cx="930" cy="200" r="140" fill="none" stroke="#5BE0FF" stroke-opacity=".6" stroke-width="1.2" stroke-dasharray="2 10"/>
+<circle cx="1070" cy="200" r="4" fill="#B8F1FF"/></g>
+<g class="spinr" style="transform-origin:930px 200px">
+<circle cx="930" cy="200" r="112" fill="none" stroke="#B8F1FF" stroke-opacity=".35" stroke-dasharray="40 14"/>
+<circle cx="818" cy="200" r="3" fill="#5BE0FF"/></g>
+<circle class="pulse" cx="801" cy="92" r="3.5" fill="#B8F1FF"/><text x="791" y="96" class="mono" font-size="11" fill="#C7D3EE" text-anchor="end" letter-spacing="2">VOICE</text><circle class="pulse" cx="1068" cy="104" r="3.5" fill="#B8F1FF"/><text x="1078" y="108" class="mono" font-size="11" fill="#C7D3EE" text-anchor="start" letter-spacing="2">MOOD</text><circle class="pulse" cx="1059" cy="308" r="3.5" fill="#B8F1FF"/><text x="1069" y="312" class="mono" font-size="11" fill="#C7D3EE" text-anchor="start" letter-spacing="2">MEMORY</text><circle class="pulse" cx="785" cy="284" r="3.5" fill="#B8F1FF"/><text x="775" y="288" class="mono" font-size="11" fill="#C7D3EE" text-anchor="end" letter-spacing="2">SKILLS</text>
+<g class="float">
+<circle cx="930" cy="200" r="78" fill="#050A16" fill-opacity=".75" stroke="url(#hero-metal)" stroke-width="2"/>
+<circle cx="930" cy="200" r="66" fill="none" stroke="#5BE0FF" stroke-opacity=".35"/>
+<text x="930" y="234" class="serif" font-size="96" fill="url(#hero-metal)" text-anchor="middle" font-style="italic">N</text>
+</g>
+<text x="1140" y="414" class="mono" font-size="11" fill="#5B6A90" text-anchor="end" letter-spacing="1.5">github.com/HemashreeVI/JarvisAI</text>
+
+</svg>
