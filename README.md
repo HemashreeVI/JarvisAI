@@ -35,7 +35,7 @@
 2. **Install Node.js** (LTS) from https://nodejs.org. Nova uses it for her see-through window. The first start sets it up automatically (about a minute).
 3. **Install Nova** (Python 3.11 to 3.14. Not 3.15 yet: many packages don't support it):
    ```bash
-   git clone https://github.com/HemashreeVI/JarvisAI.git Nova
+   git clone https://github.com/HemashreeVI/nova.git Nova
    cd Nova
    python -m venv venv
    venv\Scripts\activate
